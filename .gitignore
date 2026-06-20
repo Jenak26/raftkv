@@ -1,0 +1,40 @@
+# Compiled binaries
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test / build output
+*.test
+*.out
+coverage.*
+
+# Profiling output
+*.prof
+*.cpu
+*.mem
+*.trace
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Vendored deps (we use modules)
+/vendor/
+
+# Runtime data: node storage, snapshots, captured traces
+/data/
+*.snap
+/traces/
+
+# Local Claude Code state
+.claude/
+
+# Editor / OS cruft
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
