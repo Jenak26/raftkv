@@ -26,3 +26,14 @@ type Transport interface {
 	SendAppendEntries(ctx context.Context, to int, args *raft.AppendEntriesArgs) (*raft.AppendEntriesReply, error)
 	SendInstallSnapshot(ctx context.Context, to int, args *raft.InstallSnapshotArgs) (*raft.InstallSnapshotReply, error)
 }
+
+// Server is the receiving half of the RPC contract — the symmetric counterpart
+// to Transport. A Raft node implements Server so that a Transport (real or
+// simulated) can deliver an incoming RPC to it and hand the reply back to the
+// caller. Handlers must be safe for concurrent calls and must not block
+// indefinitely; the transport owns timeouts and reachability.
+type Server interface {
+	HandleRequestVote(args *raft.RequestVoteArgs) *raft.RequestVoteReply
+	HandleAppendEntries(args *raft.AppendEntriesArgs) *raft.AppendEntriesReply
+	HandleInstallSnapshot(args *raft.InstallSnapshotArgs) *raft.InstallSnapshotReply
+}
