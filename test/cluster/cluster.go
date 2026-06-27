@@ -90,11 +90,67 @@ func (c *Cluster) Clock() *clock.MockClock { return c.clk }
 // Advance moves simulated time forward by d for the whole cluster.
 func (c *Cluster) Advance(d time.Duration) { c.clk.Advance(d) }
 
-// Crash kills node id's running server (its in-RAM state is lost) while keeping
-// its Persister, simulating a process death.
+// killer is implemented by servers (e.g. *raft.Raft) that run background
+// goroutines which must be stopped on crash.
+type killer interface{ Kill() }
+
+// stater is implemented by servers that can report their consensus role, letting
+// the harness find the leader.
+type stater interface {
+	State() (term int, isLeader bool)
+}
+
+// Crash kills node id's running server (its in-RAM state is lost, and any
+// background goroutines are stopped) while keeping its Persister, simulating a
+// process death. Crashing an already-crashed node is a no-op.
 func (c *Cluster) Crash(id int) {
+	srv, ok := c.servers[id]
+	if !ok {
+		return
+	}
+	if k, ok := srv.(killer); ok {
+		k.Kill()
+	}
 	c.net.Crash(id)
 	delete(c.servers, id)
+}
+
+// Leaders returns id -> term for every running node that currently believes it
+// is the leader. With a correct implementation this map never contains two ids
+// for the same term (Election Safety).
+func (c *Cluster) Leaders() map[int]int {
+	out := map[int]int{}
+	for id, srv := range c.servers {
+		if s, ok := srv.(stater); ok {
+			if term, isLeader := s.State(); isLeader {
+				out[id] = term
+			}
+		}
+	}
+	return out
+}
+
+// StartClockPump advances simulated time in the background so that time-driven
+// behavior (election timeouts, heartbeats, injected latency) makes progress in
+// tests that do not advance the clock by hand. Each tick advances simulated time
+// by step after waiting pause of real time. The returned function stops the pump
+// and waits for it to exit.
+func (c *Cluster) StartClockPump(step, pause time.Duration) (stop func()) {
+	done := make(chan struct{})
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		for {
+			select {
+			case <-done:
+				return
+			default:
+				c.clk.Advance(step)
+				time.Sleep(pause)
+			}
+		}
+	}()
+	return func() { close(done); <-finished }
 }
 
 // Restart rebuilds node id from its preserved Persister and re-attaches it to

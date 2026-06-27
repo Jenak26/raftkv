@@ -182,6 +182,9 @@ func (n *Network) reachable(from, to int) (*endpoint, error) {
 	if !ok {
 		return nil, errUnreachable{from, to, "sender not on network"}
 	}
+	if src.server == nil {
+		return nil, errUnreachable{from, to, "sender crashed"}
+	}
 	dst, ok := n.nodes[to]
 	if !ok {
 		return nil, errUnreachable{from, to, "no such peer"}

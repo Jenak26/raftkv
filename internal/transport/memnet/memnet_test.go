@@ -221,3 +221,12 @@ func TestUnreliableDropPatternIsReproducibleFromSeed(t *testing.T) {
 		t.Fatalf("unreliable net delivered %d/%d — expected some drops but not all", a, n)
 	}
 }
+
+func TestCrashedNodeCannotSend(t *testing.T) {
+	net, _ := newTestNet(t, 1, 0, 1)
+	net.Crash(0)
+
+	if _, err := net.Transport(0).SendRequestVote(context.Background(), 1, &raft.RequestVoteArgs{}); err == nil {
+		t.Fatal("a crashed node should not be able to send RPCs")
+	}
+}
