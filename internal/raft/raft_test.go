@@ -94,3 +94,83 @@ func TestRejectsVoteFromStaleTerm(t *testing.T) {
 		t.Errorf("reply.Term = %d, want 5 so the stale candidate updates itself", reply.Term)
 	}
 }
+
+func TestProposeRejectedByFollower(t *testing.T) {
+	rf := raft.Make(quiescentConfig(storage.NewInMemoryPersister()))
+	defer rf.Kill()
+	if _, _, isLeader := rf.Propose([]byte("x")); isLeader {
+		t.Fatal("a follower must reject Propose")
+	}
+}
+
+func TestAppendEntriesAppendsAndReportsConflicts(t *testing.T) {
+	rf := raft.Make(quiescentConfig(storage.NewInMemoryPersister()))
+	defer rf.Kill()
+
+	// 1) Append two entries onto the empty log.
+	r := rf.HandleAppendEntries(&raft.AppendEntriesArgs{
+		Term: 1, LeaderID: 1, PrevLogIndex: 0, PrevLogTerm: 0,
+		Entries: []raft.LogEntry{{Term: 1, Index: 1, Command: []byte("a")}, {Term: 1, Index: 2, Command: []byte("b")}},
+	})
+	if !r.Success {
+		t.Fatal("expected success appending to empty log")
+	}
+	if li, _, _ := rf.LogState(); li != 2 {
+		t.Fatalf("lastIndex = %d, want 2", li)
+	}
+
+	// 2) prevLogIndex past the end -> failure with ConflictTerm -1 and the
+	//    follower's next free slot as ConflictIndex.
+	r = rf.HandleAppendEntries(&raft.AppendEntriesArgs{Term: 1, PrevLogIndex: 5, PrevLogTerm: 1})
+	if r.Success {
+		t.Fatal("expected failure when prevLogIndex is beyond the log")
+	}
+	if r.ConflictTerm != -1 || r.ConflictIndex != 3 {
+		t.Fatalf("got ConflictTerm=%d ConflictIndex=%d, want -1, 3", r.ConflictTerm, r.ConflictIndex)
+	}
+
+	// 3) prev term mismatch -> failure carrying the conflicting term and the
+	//    first index of that term.
+	r = rf.HandleAppendEntries(&raft.AppendEntriesArgs{Term: 1, PrevLogIndex: 2, PrevLogTerm: 9})
+	if r.Success {
+		t.Fatal("expected failure on prev-term mismatch")
+	}
+	if r.ConflictTerm != 1 || r.ConflictIndex != 1 {
+		t.Fatalf("got ConflictTerm=%d ConflictIndex=%d, want 1, 1", r.ConflictTerm, r.ConflictIndex)
+	}
+}
+
+func TestAppendEntriesTruncatesOnConflictOnly(t *testing.T) {
+	rf := raft.Make(quiescentConfig(storage.NewInMemoryPersister()))
+	defer rf.Kill()
+
+	// Build [sentinel, {1,1}, {2,2}, {2,3}].
+	rf.HandleAppendEntries(&raft.AppendEntriesArgs{
+		Term: 2, PrevLogIndex: 0, PrevLogTerm: 0,
+		Entries: []raft.LogEntry{{Term: 1, Index: 1, Command: []byte("a")}, {Term: 2, Index: 2, Command: []byte("b")}, {Term: 2, Index: 3, Command: []byte("c")}},
+	})
+
+	// Re-send an entry that already matches: must NOT truncate the tail.
+	r := rf.HandleAppendEntries(&raft.AppendEntriesArgs{
+		Term: 2, PrevLogIndex: 1, PrevLogTerm: 1,
+		Entries: []raft.LogEntry{{Term: 2, Index: 2, Command: []byte("b")}},
+	})
+	if !r.Success {
+		t.Fatal("expected success re-sending a matching entry")
+	}
+	if li, _, _ := rf.LogState(); li != 3 {
+		t.Fatalf("lastIndex = %d, want 3 (matching entries must not be truncated)", li)
+	}
+
+	// Now a genuine conflict at index 2 (term 3 != 2): truncate from 2 and append.
+	r = rf.HandleAppendEntries(&raft.AppendEntriesArgs{
+		Term: 3, PrevLogIndex: 1, PrevLogTerm: 1,
+		Entries: []raft.LogEntry{{Term: 3, Index: 2, Command: []byte("x")}},
+	})
+	if !r.Success {
+		t.Fatal("expected success applying a conflicting entry")
+	}
+	if li, lt, _ := rf.LogState(); li != 2 || lt != 3 {
+		t.Fatalf("lastIndex=%d lastTerm=%d, want 2, 3", li, lt)
+	}
+}

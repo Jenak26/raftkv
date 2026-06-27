@@ -8,14 +8,14 @@ A linearizable, fault-tolerant key-value store built on a **from-scratch impleme
 
 ## Status
 
-🚧 **Under active construction — Phase 2 (Leader election) complete.**
+🚧 **Under active construction — Phase 3 (Log replication) complete.**
 
 | Phase | Capability | State |
 |------:|---|:---:|
 | 0 | Project scaffolding, core interfaces, deterministic clock, race-tested toolchain | ✅ |
 | 1 | Deterministic simulated network + cluster test harness | ✅ |
 | 2 | Leader election | ✅ |
-| 3 | Log replication | ⏳ |
+| 3 | Log replication | ✅ |
 | 4 | Persistence & crash recovery | ⏳ |
 | 5 | KV layer + exactly-once client semantics | ⏳ |
 | 6 | Snapshotting / log compaction | ⏳ |
