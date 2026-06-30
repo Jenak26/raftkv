@@ -1,21 +1,42 @@
-# raftkv
+# 🗳️ raftkv — A Linearizable Distributed Key-Value Store
 
-**A linearizable, fault-tolerant key-value store built on a from-scratch implementation of the [Raft consensus algorithm](https://raft.github.io/raft.pdf) in Go** — and tested the way real distributed databases are: inside a *deterministic simulation* where the network, clocks, and crashes are all driven by a single seed, so any bug can be replayed on demand.
+<div align="center">
 
-[![CI](https://github.com/Jenak26/raftkv/actions/workflows/ci.yml/badge.svg)](https://github.com/Jenak26/raftkv/actions/workflows/ci.yml)
-![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
+[![Raft](https://img.shields.io/badge/Raft-from%20the%20paper-2C5985?style=for-the-badge)](https://raft.github.io/raft.pdf)
+[![Race Detector](https://img.shields.io/badge/tested%20with-%E2%80%91race-success?style=for-the-badge)](https://go.dev/doc/articles/race_detector)
+[![Verified](https://img.shields.io/badge/Verified-Linearizable%20under%20chaos-brightgreen?style=for-the-badge)](#-how-its-tested--the-whole-point)
+[![CI](https://img.shields.io/github/actions/workflow/status/Jenak26/raftkv/ci.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white)](https://github.com/Jenak26/raftkv/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
-> "I implemented Raft" is common. The aim here is the rarer, harder thing: to **prove** the system stays linearizable under adversarial faults, **replay any failure from its seed**, and **explain every safety and liveness property**. No consensus libraries — the algorithm is built from the extended Raft paper, function by function.
+</div>
+
+**A fault-tolerant key-value store built on a from-scratch implementation of the [Raft consensus algorithm](https://raft.github.io/raft.pdf) — and tested the way real distributed databases are: inside a *deterministic simulation* where the network, clock, and disk are driven by a single seed.** No consensus libraries. No `hashicorp/raft`. The algorithm is built from the extended paper, function by function — election, replication, persistence, snapshotting, membership, and linearizable reads — and then put through a Jepsen-style gauntlet that *proves* it stays correct under partitions, crashes, and message loss.
+
+> [!IMPORTANT]
+> **The deliverable isn't "Raft works." It's "Raft is *provably* correct under chaos — and any failure replays from its seed."** A hand-written linearizability checker verifies that everything clients observed, while a nemesis tore the cluster apart, could only have come from a single correct machine. Three real, deep bugs were found, fixed, and written up as case files in the [**bug museum**](explain/bug-museum/).
 
 ---
 
-## Quickstart — run a real 3-node cluster
+## 💡 Why I Built This
 
-Requires Go 1.26+. Open four terminals.
+A from-scratch Raft KV store is, on its own, a commodity portfolio project — MIT's 6.5840 mints thousands a year. A senior engineer reading "I implemented Raft" thinks *"so did everyone — did you actually understand it, or did you brute-force the test suite?"*
+
+So I set the bar somewhere harder. The core idea was simple: **make every source of non-determinism a knob I control.** Time, the network, and disk all sit behind interfaces. In production they're real (`net/rpc` over TCP, files with `fsync`). In tests they're a single seeded simulation that can drop, delay, reorder, and partition messages, and crash and restart nodes — all reproducibly. That one decision turns the two hardest things about distributed systems into tractable problems:
+
+1. **You can *prove* correctness**, not just claim it — record what clients observed under fault injection and check the history for linearizability.
+2. **You can *debug the undebuggable*** — a one-in-a-thousand race isn't a ghost, it's `make chaos SEED=42`.
+
+Everything else in this repo follows from that.
+
+---
+
+## ⚡ Quickstart — drive a real 3-node cluster
+
+> Requires Go 1.26+. Four terminals.
 
 ```bash
-# Terminals 1–3: start a 3-node cluster (each node gets its own data dir)
+# Terminals 1–3 — a 3-node cluster, each node with its own durable data dir
 PEERS="0=127.0.0.1:9000,1=127.0.0.1:9001,2=127.0.0.1:9002"
 go run ./cmd/kvserver -id 0 -peers "$PEERS" -data ./data/0
 go run ./cmd/kvserver -id 1 -peers "$PEERS" -data ./data/1
@@ -23,111 +44,173 @@ go run ./cmd/kvserver -id 2 -peers "$PEERS" -data ./data/2
 ```
 
 ```bash
-# Terminal 4: drive it with the CLI — it finds the leader and retries automatically
+# Terminal 4 — the CLI finds the leader, follows re-elections, and retries for you
 SRV="127.0.0.1:9000,127.0.0.1:9001,127.0.0.1:9002"
-go run ./cmd/kvctl -servers "$SRV" put color blue        # OK
-go run ./cmd/kvctl -servers "$SRV" get color             # blue
-go run ./cmd/kvctl -servers "$SRV" cas color blue green  # OK (swapped)
-go run ./cmd/kvctl -servers "$SRV" del color             # OK (deleted)
+go run ./cmd/kvctl -servers "$SRV" put color blue         # OK
+go run ./cmd/kvctl -servers "$SRV" get color              # blue
+go run ./cmd/kvctl -servers "$SRV" cas color blue green   # OK (swapped)
+go run ./cmd/kvctl -servers "$SRV" del color              # OK (deleted)
 ```
 
-Kill the leader mid-session — the cluster re-elects and the CLI keeps working. State survives restarts (it's persisted to `./data/*` with `fsync` + atomic rename).
+> [!TIP]
+> Kill the leader (`Ctrl-C`) mid-session. A new leader is elected within a couple hundred milliseconds, the CLI transparently retries, and your data is still there on restart — it was persisted with `fsync` + atomic rename.
 
-## What makes it different
+---
 
-The moat isn't that the Raft code works — it's that correctness is **proven, not asserted**:
+## 🏗️ Architecture
 
-- 🎲 **Deterministic Simulation Testing.** Time, the network, and disk are behind interfaces. In production they're real (`net/rpc` over TCP, files with `fsync`); in tests they're a seeded in-memory simulation that can drop, delay, reorder, and partition messages and crash/restart nodes — all reproducibly. A flaky distributed bug becomes a one-line repro: `make chaos SEED=42`.
-- 🔬 **Linearizability verified under chaos.** A from-scratch [Wing-Gong-Lowe checker](test/linearizability/) confirms that the operations clients actually observed — recorded with real-time brackets while a seeded nemesis injects partitions, crashes, and restarts — could only have come from a single correct machine. Every operation, every seed.
-- 🐛 **A bug museum.** Real bugs found during development, each a case file: symptom → root cause (which Raft invariant) → fix → the test that now catches it. See [`explain/bug-museum/`](explain/bug-museum/).
+Every source of non-determinism sits behind an interface, so the **same Raft code** runs in production and inside the seeded simulation. That is the whole project in one diagram.
 
-## Results
+```mermaid
+flowchart TD
+    CLI["🖥️ kvctl — CLI client<br/>finds leader · retries · exactly-once"]
 
-| Read consistency | Latency (3-node, loopback) | |
-|---|---:|---|
-| Stale read (local, any node) | **~71 µs** | served from a follower's state machine |
-| Linearizable read (ReadIndex) | **~143 µs** | one heartbeat round confirms leadership — no log write |
-| Write (full consensus round) | **~1.2 ms** | replicate to a majority, then apply |
+    subgraph App ["KV Service Layer"]
+        SM["state machine — map<br/>Put · Get · Delete · CAS"]
+        SESS["client sessions<br/>dedup table → exactly-once"]
+        RI["ReadIndex<br/>linearizable reads"]
+    end
 
-The ~2× linearizable-vs-stale gap and the ~8× write cost are the consistency/latency trade-offs the design deliberately exposes. Methodology and the full analysis: [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+    subgraph Core ["⚙️ Raft Consensus Core — from scratch"]
+        EL["leader election"]
+        REP["log replication"]
+        PERS["persistence"]
+        SNAP["snapshots / compaction"]
+        MEM["membership changes"]
+    end
 
-## Raft features implemented (from the paper, from scratch)
+    subgraph Transport ["Transport · interface"]
+        RPC["net/rpc over TCP<br/>(production)"]
+        SIM["deterministic sim network<br/>drop · delay · partition · crash<br/>(tests)"]
+    end
 
-- ✅ **Leader election** — terms as a logical clock, randomized timeouts, Election Safety verified across thousands of seeded partition runs
-- ✅ **Log replication** — `AppendEntries` with the Log Matching property, conflict-term fast backtracking, and the Figure-8 current-term commit rule
-- ✅ **Persistence & crash recovery** — `currentTerm`/`votedFor`/`log` durable before any reply; crash-atomic `fsync` + rename storage
-- ✅ **Snapshotting / log compaction** — `InstallSnapshot`, a log offset, and single-applier delivery that avoids the app↔Raft restore deadlock
-- ✅ **Single-server membership changes** — configuration lives in the log; safe without joint consensus via overlapping majorities
-- ✅ **Linearizable reads** — ReadIndex (election no-op + heartbeat confirmation), plus a fast stale-read mode
-- ✅ **Exactly-once client semantics** — client sessions + a dedup table turn at-least-once delivery into exactly-once
-- ⬜ Stretch: sharding, BoltDB storage, gRPC + TLS, Pre-Vote, Grafana dashboards (see [`plan.md`](plan.md))
+    subgraph Storage ["Storage · interface"]
+        FILE["file — fsync + atomic rename"]
+        MEMSTORE["in-memory — crash-injectable"]
+    end
 
-## Architecture
+    CLI -->|Put / Get / CAS| App
+    App -->|"Propose(cmd) / applyCh"| Core
+    Core -->|RequestVote · AppendEntries · InstallSnapshot| Transport
+    Core --> Storage
 
-```
-            kvctl (CLI client)  ── finds leader, retries, exactly-once
-                     │
-   ┌─────────────────▼──────────────────────────────────────────────┐
-   │  KV service layer   state machine · client sessions · ReadIndex │
-   └─────────────────┬──────────────────────────────────────────────┘
-                     │  Propose(cmd) → applyCh
-   ┌─────────────────▼──────────────────────────────────────────────┐
-   │  Raft consensus core (from scratch)                             │
-   │  elections · replication · persistence · snapshots · membership │
-   └─────────────────┬──────────────────────────────────────────────┘
-                     │  RequestVote · AppendEntries · InstallSnapshot
-   ┌─────────────────▼──────────────┐   ┌────────────────────────────┐
-   │ Transport (interface)          │   │ Storage (interface)        │
-   │ net/rpc/TCP  │  sim network ◀──┼───┼─ file (fsync) │ in-memory  │
-   └────────────────────────────────┘   └────────────────────────────┘
-              production │ tests              production │ tests
+    classDef core fill:#0284c7,stroke:#0369a1,color:#fff;
+    class EL,REP,PERS,SNAP,MEM core;
 ```
 
-Every source of non-determinism sits behind an interface, so the **same Raft code** runs in production and inside the seeded simulation. That is the project's core idea.
+---
 
-## How it's tested
+## 🧪 How It's Tested — *the whole point*
+
+Correctness here is **proven, not asserted.** The test strategy *is* the project.
+
+### 🎲 Deterministic Simulation Testing (DST)
+
+The cluster runs in-process over a simulated network whose every fault — message drop, delay, reorder, partition, node crash/restart — is driven by one seeded RNG and an injected mock clock. A flaky distributed bug stops being a ghost and becomes a one-line repro.
+
+### 🔬 Linearizability, verified under chaos
+
+A seeded **nemesis** injects partitions and crashes while concurrent clients hammer the cluster. Every operation is recorded with its real-time bracket, and a **from-scratch [Wing-Gong-Lowe checker](test/linearizability/)** searches for a sequential ordering that explains what clients saw. If none exists, the run fails — and prints the seed.
+
+> [!NOTE]
+> **Why client retries don't corrupt the verdict.** Under chaos a write can time out at the transport yet still commit. Exactly-once client sessions (a per-client dedup table, updated *in the apply loop* so it's part of the replicated state) collapse retries, so every recorded operation maps to exactly one committed effect. The history is complete — so the checker's verdict is *sound*, not just suggestive.
+
+### 🐛 The bug museum
+
+Real bugs found while building this, each a case file — *symptom → which Raft invariant broke → fix → the test that now catches it*:
+
+| # | Bug | Lesson |
+|---|---|---|
+| [01](explain/bug-museum/01-single-node-never-elects.md) | A single-node cluster never elected a leader | Evaluate a majority the instant the deciding vote is cast — including your own |
+| [02](explain/bug-museum/02-internal-entries-delivered-to-app.md) | Raft delivered its own internal entries to the app, which panicked | Test the *integration* of features, not just each alone |
+| [03](explain/bug-museum/03-harness-data-race.md) | The test harness raced under concurrent chaos | Caught by `-race` on the first concurrent run — infra is production code too |
+
+### Run it yourself
 
 ```bash
-make race            # the real gate: every test under the race detector
-make all             # gofmt check + vet + race tests
+make race            # every test under the race detector — the real gate
 make chaos           # the nemesis + linearizability suite, sweeping seeds
-make chaos SEED=42   # replay one seed exactly
-make bench           # latency/throughput benchmarks
+make chaos SEED=42   # replay one seed, exactly
+make bench           # latency / throughput benchmarks
+make all             # gofmt + vet + race
 ```
 
-The test pyramid: unit tests for pure logic, an in-process cluster harness over the simulated network, property/randomized tests, the linearizability checker, and the chaos/soak suite. CI runs `-race` on every push.
+---
 
-## Repository layout
+## 📊 Results — the cost of consensus
+
+Measured on a 3-node loopback cluster (`net/rpc`, in-memory persister) — full methodology in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md):
+
+* 🛡️ **Linearizable read ≈ 143 µs** — ReadIndex confirms leadership with one heartbeat round, and writes *nothing* to the log.
+* ⚡ **Stale read ≈ 71 µs** — served locally from any follower's state machine. ~2× faster, the consistency/latency knob made concrete.
+* 🔁 **Write ≈ 1.2 ms** — a full consensus round: replicate to a majority, then apply.
+
+> [!IMPORTANT]
+> The ~2× linearizable-vs-stale gap and ~8× write cost aren't accidents — they're the trade-offs the design *exposes on purpose*, so you can choose per read. Optimizations (batching, pipelining, leader leases) are scoped as future work and **gated on re-passing the chaos suite** — an optimization that breaks linearizability is not an optimization.
+
+---
+
+## 🧩 What's Implemented — Raft, from the paper
+
+| | Feature | Detail |
+|---|---|---|
+| ✅ | **Leader election** | terms as a logical clock, randomized timeouts, Election Safety verified across thousands of seeded partition runs |
+| ✅ | **Log replication** | `AppendEntries` with the Log Matching property, conflict-term fast backtracking, and the Figure-8 current-term commit rule |
+| ✅ | **Persistence & crash recovery** | `currentTerm`/`votedFor`/`log` durable *before* any reply; crash-atomic `fsync` + rename storage |
+| ✅ | **Snapshotting** | `InstallSnapshot`, a log offset, single-applier delivery that dodges the app↔Raft restore deadlock |
+| ✅ | **Membership changes** | single-server reconfiguration; safe without joint consensus via overlapping majorities |
+| ✅ | **Linearizable reads** | ReadIndex with an election no-op + heartbeat confirmation; plus a fast stale-read mode |
+| ✅ | **Exactly-once semantics** | client sessions + dedup table turn at-least-once delivery into exactly-once |
+| ⬜ | **Stretch** | sharding, BoltDB storage, gRPC + TLS, Pre-Vote, Grafana dashboards — see [`plan.md`](plan.md) |
+
+---
+
+## 🛠️ Design Decisions
+
+ADR-style — the *why* matters more than the *what*:
+
+| Decision | Choice | Why |
+|---|---|---|
+| **Concurrency model** | one mutex per node; never held across an RPC | beginners' Raft dies to fine-grained locking; this kills the classic deadlock by rule |
+| **Transport** | interface + `net/rpc` (prod) and a sim network (tests) | the simulated network is what makes deterministic fault injection — and this whole repo — possible |
+| **Reads** | ReadIndex, not leader leases | no clock-skew assumption; correctness before the lease optimization |
+| **Membership** | single-server changes, not joint consensus | old/new majorities always overlap, so split-brain is impossible without the heavier machinery |
+| **Storage** | `Persister` interface; file with `fsync`+rename | clean boundary; a crash mid-write leaves the old or new bytes, never a torn file |
+
+---
+
+## 📚 Learn the Internals
+
+The [`explain/`](explain/) folder is half the value of this repo — every subsystem in plain words: the problem it solves, the invariants, the message flow, and what breaks if you get it wrong.
+
+[Replicated state machines](explain/01-replicated-state-machines.md) · [Deterministic simulation](explain/02-deterministic-simulation.md) · [Leader election](explain/03-leader-election.md) · [Log replication](explain/04-log-replication.md) · [Persistence](explain/05-persistence-and-recovery.md) · [KV & exactly-once](explain/06-kv-and-client-semantics.md) · [Snapshotting](explain/07-snapshotting.md) · [Membership](explain/08-membership-changes.md) · [Linearizable reads](explain/09-linearizable-reads.md) · [Failure testing](explain/10-failure-testing.md)
+
+See [`plan.md`](plan.md) for the full build plan and [`DIFFERENTIATION.md`](DIFFERENTIATION.md) for the strategy behind it.
+
+---
+
+## 🗺️ Repository Layout
 
 ```
-cmd/            kvserver (a node) and kvctl (the CLI client)
+cmd/            kvserver (a node) · kvctl (the CLI client)
 internal/
-  raft/         the consensus core — built from scratch
+  raft/         the consensus core — from scratch
   kv/           key-value state machine, server, client (Clerk)
   transport/    Transport interface + memnet (deterministic sim network)
   netrpc/       production net/rpc transport (node-to-node + client)
-  storage/      Persister interface — file (fsync) and in-memory impls
+  storage/      Persister interface — file (fsync) + in-memory impls
   clock/        injectable time (real + deterministic mock)
 test/
   cluster/      in-process N-node cluster harness
   chaos/        seeded nemesis + Jepsen-style verification
   linearizability/  from-scratch WGL linearizability checker
 bench/          benchmark harness
-explain/        learning notes — concepts, and the bug museum (half the value)
-docs/           architecture, benchmarks, design decisions
+explain/        learning notes + the bug museum
+docs/           architecture · benchmarks · design decisions
 ```
 
-## Learn the internals
+---
 
-The [`explain/`](explain/) folder walks through every subsystem in its own words — what problem it solves, the invariants, the message flow, and what breaks if you get it wrong:
-
-- [Replicated state machines](explain/01-replicated-state-machines.md) · [Deterministic simulation](explain/02-deterministic-simulation.md) · [Leader election](explain/03-leader-election.md) · [Log replication](explain/04-log-replication.md)
-- [Persistence & recovery](explain/05-persistence-and-recovery.md) · [KV & exactly-once](explain/06-kv-and-client-semantics.md) · [Snapshotting](explain/07-snapshotting.md)
-- [Membership changes](explain/08-membership-changes.md) · [Linearizable reads](explain/09-linearizable-reads.md) · [Failure testing](explain/10-failure-testing.md)
-- 🐛 [**The bug museum**](explain/bug-museum/) — real bugs, root causes, and the tests that catch them
-
-See [`plan.md`](plan.md) for the full execution plan and [`DIFFERENTIATION.md`](DIFFERENTIATION.md) for the strategy behind it.
-
-## License
+## 📜 License
 
 Released under the [MIT License](LICENSE).
