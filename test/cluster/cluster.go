@@ -13,6 +13,7 @@
 package cluster
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -34,12 +35,18 @@ type NodeFactory func(id int, peers []int, tr transport.Transport, persister sto
 // Cluster owns the simulated network, the shared deterministic clock, and the
 // per-node persisters and servers.
 type Cluster struct {
-	t          *testing.T
-	n          int
+	t       *testing.T
+	n       int
+	clk     *clock.MockClock
+	net     *memnet.Network
+	factory NodeFactory
+
+	// mu guards the maps and ids below. The chaos suite drives the cluster from
+	// several goroutines at once (a nemesis crashing/restarting/partitioning while
+	// clients read leadership), so these must be safe for concurrent access. The
+	// underlying network has its own lock.
+	mu         sync.Mutex
 	ids        []int
-	clk        *clock.MockClock
-	net        *memnet.Network
-	factory    NodeFactory
 	persisters map[int]storage.Persister
 	servers    map[int]transport.Server
 }
@@ -71,7 +78,24 @@ func New(t *testing.T, n int, seed int64, factory NodeFactory) *Cluster {
 // start constructs the node id from its existing persister and registers it on
 // the network.
 func (c *Cluster) start(id int) {
-	srv := c.factory(id, c.ids, c.net.Transport(id), c.persisters[id], c.clk)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	srv := c.factory(id, append([]int(nil), c.ids...), c.net.Transport(id), c.persisters[id], c.clk)
+	c.servers[id] = srv
+	c.net.AddNode(id, srv)
+}
+
+// AddNode creates and starts a brand-new node with the given id and attaches it to
+// the network. It is constructed with an EMPTY bootstrap configuration so it does
+// not campaign on its own; it learns the cluster membership from the leader once a
+// configuration entry that includes it replicates to it (Phase 7). The caller is
+// responsible for then issuing AddServer on the leader so the node becomes a member.
+func (c *Cluster) AddNode(id int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.ids = append(c.ids, id)
+	c.persisters[id] = storage.NewInMemoryPersister()
+	srv := c.factory(id, []int{}, c.net.Transport(id), c.persisters[id], c.clk)
 	c.servers[id] = srv
 	c.net.AddNode(id, srv)
 }
@@ -82,7 +106,11 @@ func (c *Cluster) Transport(from int) transport.Transport { return c.net.Transpo
 
 // Server returns the currently-running server for node id. After a Restart this
 // is the new instance, not the crashed one.
-func (c *Cluster) Server(id int) transport.Server { return c.servers[id] }
+func (c *Cluster) Server(id int) transport.Server {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.servers[id]
+}
 
 // Clock returns the cluster's deterministic clock.
 func (c *Cluster) Clock() *clock.MockClock { return c.clk }
@@ -104,7 +132,12 @@ type stater interface {
 // background goroutines are stopped) while keeping its Persister, simulating a
 // process death. Crashing an already-crashed node is a no-op.
 func (c *Cluster) Crash(id int) {
+	c.mu.Lock()
 	srv, ok := c.servers[id]
+	if ok {
+		delete(c.servers, id)
+	}
+	c.mu.Unlock()
 	if !ok {
 		return
 	}
@@ -112,15 +145,21 @@ func (c *Cluster) Crash(id int) {
 		k.Kill()
 	}
 	c.net.Crash(id)
-	delete(c.servers, id)
 }
 
 // Leaders returns id -> term for every running node that currently believes it
 // is the leader. With a correct implementation this map never contains two ids
 // for the same term (Election Safety).
 func (c *Cluster) Leaders() map[int]int {
+	c.mu.Lock()
+	servers := make(map[int]transport.Server, len(c.servers))
+	for id, s := range c.servers {
+		servers[id] = s
+	}
+	c.mu.Unlock()
+
 	out := map[int]int{}
-	for id, srv := range c.servers {
+	for id, srv := range servers {
 		if s, ok := srv.(stater); ok {
 			if term, isLeader := s.State(); isLeader {
 				out[id] = term
@@ -156,7 +195,9 @@ func (c *Cluster) StartClockPump(step, pause time.Duration) (stop func()) {
 // Restart rebuilds node id from its preserved Persister and re-attaches it to
 // the network, simulating a process restart that reloads durable state.
 func (c *Cluster) Restart(id int) {
-	srv := c.factory(id, c.ids, c.net.Transport(id), c.persisters[id], c.clk)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	srv := c.factory(id, append([]int(nil), c.ids...), c.net.Transport(id), c.persisters[id], c.clk)
 	c.servers[id] = srv
 	c.net.Restart(id, srv)
 }
