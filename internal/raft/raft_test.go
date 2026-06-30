@@ -65,6 +65,35 @@ func TestPersistsTermAndVoteAcrossRestart(t *testing.T) {
 	}
 }
 
+// TestSingleNodeElectsItselfLeader guards the single-node edge case: a one-node
+// cluster's self-vote is already a majority, so it must become leader on its first
+// election timeout without sending any RPC. (Bug museum 01: the votes>=majority
+// promotion check originally lived only inside a per-peer reply goroutine, so with
+// no peers it never fired and a lone node stayed a perpetual candidate.)
+func TestSingleNodeElectsItselfLeader(t *testing.T) {
+	clk := clock.NewMockClock(time.Unix(0, 0))
+	rf := raft.Make(raft.Config{
+		ID:        0,
+		Peers:     []int{0},
+		Transport: deadTransport{},
+		Persister: storage.NewInMemoryPersister(),
+		Clock:     clk,
+		ApplyCh:   make(chan raft.ApplyMsg, 8),
+		Rand:      rand.New(rand.NewSource(1)),
+	})
+	defer rf.Kill()
+
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		clk.Advance(50 * time.Millisecond) // push past the election timeout
+		if _, isLeader := rf.State(); isLeader {
+			return
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	t.Fatal("single-node cluster never elected itself leader")
+}
+
 func TestStepsDownOnHigherTermInRequestVote(t *testing.T) {
 	rf := raft.Make(quiescentConfig(storage.NewInMemoryPersister()))
 	defer rf.Kill()

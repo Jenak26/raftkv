@@ -6,10 +6,16 @@ package raft
 
 // LogEntry is one entry in the replicated log. Command is an opaque blob — the
 // Raft layer never interprets it; the application (kv) encodes and decodes it.
+//
+// A configuration-change entry instead carries Config (the new member set) and a
+// nil Command. The Raft layer recognizes these and uses the latest one in the log
+// as the current cluster membership (Phase 7). Normal command entries have
+// Config == nil.
 type LogEntry struct {
 	Term    int
 	Index   int
 	Command []byte
+	Config  []int // non-nil => configuration-change entry carrying the new member set
 }
 
 // RequestVoteArgs is sent by candidates to gather votes (Figure 2).
@@ -54,6 +60,7 @@ type InstallSnapshotArgs struct {
 	LeaderID          int
 	LastIncludedIndex int
 	LastIncludedTerm  int
+	Config            []int // configuration in effect as of the snapshot point
 	Data              []byte
 }
 
