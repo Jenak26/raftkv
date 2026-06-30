@@ -1,6 +1,6 @@
 // Package cluster is the in-process test harness for spinning up an N-node
 // cluster on the deterministic simulated network (internal/transport/memnet)
-// and subjecting it to faults — partitions, disconnects, and crash/restart —
+// and subjecting it to faults - partitions, disconnects, and crash/restart -
 // all reproducibly from a seed.
 //
 // It is deliberately decoupled from the Raft implementation: callers supply a
@@ -8,7 +8,7 @@
 // Phase 1 tests pass a simple test double; from Phase 2 onward the factory wraps
 // raft.Make, and the same harness gains "find the leader" helpers. Keeping the
 // dependency this way round means the harness (and the network beneath it) is
-// fully testable before a single line of Raft exists — the whole point of
+// fully testable before a single line of Raft exists - the whole point of
 // building the test infrastructure first.
 package cluster
 
@@ -29,7 +29,7 @@ import (
 //
 // Crucially, on a restart the harness passes the *same* Persister the node had
 // before it crashed, so a real raft.Make will reload currentTerm/votedFor/log
-// from it — exactly as a real process reloads from disk.
+// from it - exactly as a real process reloads from disk.
 type NodeFactory func(id int, peers []int, tr transport.Transport, persister storage.Persister, clk clock.Clock) transport.Server
 
 // Cluster owns the simulated network, the shared deterministic clock, and the

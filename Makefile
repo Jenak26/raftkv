@@ -1,4 +1,4 @@
-# raftkv — developer task runner.
+# raftkv - developer task runner.
 # On Windows, run these under Git Bash, WSL, or install `make` (e.g. choco install make).
 
 GO   ?= go

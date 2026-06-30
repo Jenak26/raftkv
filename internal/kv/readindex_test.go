@@ -63,7 +63,7 @@ func TestLinearizableReadAfterLeaderChange(t *testing.T) {
 	h.crash(leader)
 
 	// The Clerk retries until a new leader is elected, commits its no-op, and serves
-	// the ReadIndex read — which must reflect the committed write.
+	// the ReadIndex read - which must reflect the committed write.
 	if v, ok, err := ck.Get(ctx, "k"); err != nil || !ok || v != "v1" {
 		t.Fatalf("linearizable get after leader change = (%q,%v,%v), want (v1,true,nil)", v, ok, err)
 	}
@@ -91,7 +91,7 @@ func TestStaleReadServedByFollowerLocally(t *testing.T) {
 	}
 
 	// A stale read is served locally by the follower. Once the write has replicated
-	// and applied there, it returns the value — without ever contacting the leader.
+	// and applied there, it returns the value - without ever contacting the leader.
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
 		res, err := h.server(follower).Submit(ctx, kv.Command{Kind: kv.OpGet, Key: "k", ReadStale: true})

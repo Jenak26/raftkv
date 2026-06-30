@@ -34,7 +34,7 @@ type Command struct {
 	SeqNum   int64
 
 	// ReadStale, when set on an OpGet, asks for a fast read served from the local
-	// state machine of whatever node receives it — possibly stale, not
+	// state machine of whatever node receives it - possibly stale, not
 	// linearizable. It is never used for writes and never travels through the log
 	// (stale reads are not replicated).
 	ReadStale bool

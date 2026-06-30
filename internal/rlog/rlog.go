@@ -4,7 +4,7 @@
 // simulation reads as a precise, replayable timeline of the cluster.
 //
 // Time comes from an injected clock.Clock (a clock.MockClock in simulation), so
-// timestamps advance with simulated — not wall-clock — time and are identical on
+// timestamps advance with simulated - not wall-clock - time and are identical on
 // every replay of the same seed. That is what makes "grep the log for the bug"
 // a reliable debugging workflow in this project.
 package rlog

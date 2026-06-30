@@ -24,7 +24,7 @@ func asReconfigurer(c *Cluster, id int) (reconfigurer, bool) {
 
 // addServer retries AddServer across leaders until the change is accepted (or the
 // node is already a member), then waits until the new member has actually adopted
-// the configuration — i.e. the entry replicated to it.
+// the configuration - i.e. the entry replicated to it.
 func addServer(t *testing.T, c *Cluster, id int) {
 	t.Helper()
 	doReconfig(t, c, func(r reconfigurer) error { return r.AddServer(id) }, errAlreadyMemberOK)

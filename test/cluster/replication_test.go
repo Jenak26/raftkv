@@ -283,7 +283,7 @@ func TestLogConvergesAfterPartition(t *testing.T) {
 	waitAppliedAll(t, col, lastB, majority, 5*time.Second)
 
 	// The old leader must not have applied anything past the prefix that was
-	// committed before the partition — its divergent OLD-* entries never commit.
+	// committed before the partition - its divergent OLD-* entries never commit.
 	if col.appliedIndex(l1) > committedBeforePartition {
 		t.Fatalf("old leader %d applied an uncommitted divergent entry (applied %d > %d)",
 			l1, col.appliedIndex(l1), committedBeforePartition)
@@ -322,7 +322,7 @@ func TestNoConflictingCommitsUnderChurn(t *testing.T) {
 			}
 			// After the chaos stops, the cluster must still make progress: commit a
 			// fresh entry and confirm every node applies it. (Asserting only that
-			// *some* in-loop entry committed is flaky — aggressive crash timing can
+			// *some* in-loop entry committed is flaky - aggressive crash timing can
 			// legitimately prevent any in-loop commit; proving post-churn liveness is
 			// the property we actually care about, and it is deterministic.)
 			checkOneLeader(t, c, 3*time.Second)

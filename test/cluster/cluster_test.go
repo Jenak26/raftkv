@@ -69,7 +69,7 @@ func TestCrashRestartPreservesPersistentStorage(t *testing.T) {
 	c.Restart(1)
 
 	// The restarted node must observe the previous boot count from its
-	// Persister — proving durable state survived the crash.
+	// Persister - proving durable state survived the crash.
 	if got := c.Server(1).(*bootCounter).boots; got != 2 {
 		t.Fatalf("after restart node 1 boots = %d, want 2 (persister was not preserved)", got)
 	}
@@ -90,7 +90,7 @@ func TestCrashedNodeIsUnreachableThenRecovers(t *testing.T) {
 }
 
 // TestDeterministicPartitionThenTimedHeal exercises the headline Phase 1
-// success criterion: "partition node 2 away, then heal after 500ms" — driven by
+// success criterion: "partition node 2 away, then heal after 500ms" - driven by
 // the harness's deterministic MockClock.
 func TestDeterministicPartitionThenTimedHeal(t *testing.T) {
 	c := New(t, 3, 1, newBootCounter)

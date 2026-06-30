@@ -39,8 +39,8 @@ go.work.sum
 .DS_Store
 Thumbs.db
 
-# Personal study notes — kept local, not published
+# Personal study notes - kept local, not published
 /explain/
 
-# Internal strategy doc — kept local, not published
+# Internal strategy doc - kept local, not published
 /DIFFERENTIATION.md

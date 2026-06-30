@@ -6,7 +6,7 @@ import (
 )
 
 // TestCounterConcurrent hammers the counter from many goroutines. Run with
-// `go test -race` — this is the canary that proves the race detector is active.
+// `go test -race` - this is the canary that proves the race detector is active.
 func TestCounterConcurrent(t *testing.T) {
 	var c Counter
 	const goroutines, perGoroutine = 100, 1000

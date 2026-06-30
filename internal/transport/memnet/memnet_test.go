@@ -218,7 +218,7 @@ func TestUnreliableDropPatternIsReproducibleFromSeed(t *testing.T) {
 		t.Fatalf("same seed produced different drop patterns: %d vs %d", a, b)
 	}
 	if a == 0 || a == n {
-		t.Fatalf("unreliable net delivered %d/%d — expected some drops but not all", a, n)
+		t.Fatalf("unreliable net delivered %d/%d - expected some drops but not all", a, n)
 	}
 }
 

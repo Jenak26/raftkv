@@ -233,8 +233,8 @@ func (c *countingSM) count() int {
 }
 
 // TestKVExactlyOnceUnderDuplicateSubmit drives the dedup directly: submitting the
-// identical (ClientID, SeqNum) command twice — as an at-least-once transport would
-// on a lost reply — must mutate the state machine exactly once, while a fresh
+// identical (ClientID, SeqNum) command twice - as an at-least-once transport would
+// on a lost reply - must mutate the state machine exactly once, while a fresh
 // SeqNum applies again.
 func TestKVExactlyOnceUnderDuplicateSubmit(t *testing.T) {
 	sm := newCountingSM()
@@ -305,7 +305,7 @@ func firstIndexOf(t *testing.T, h *kvHarness, id int) int {
 // TestSnapshotLaggingFollowerCatchesUp is the Phase 6 headline: with a small
 // snapshot threshold, isolate a follower, write enough that the leader compacts
 // away the entries the follower is missing, then reconnect it. The follower cannot
-// be caught up with AppendEntries (those entries are gone) — it must receive an
+// be caught up with AppendEntries (those entries are gone) - it must receive an
 // InstallSnapshot and rebuild its state machine from it.
 func TestSnapshotLaggingFollowerCatchesUp(t *testing.T) {
 	const threshold = 1000 // bytes; small so a few hundred writes force compaction

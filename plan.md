@@ -1,14 +1,14 @@
-# Raft-Based Distributed Key-Value Store in Go — Master Execution Plan
+# Raft-Based Distributed Key-Value Store in Go - Master Execution Plan
 
-> **Goal:** Build a correct, well-tested, well-documented distributed key-value store backed by a **from-scratch implementation of the Raft consensus algorithm**, optimized for *maximum learning, interview readiness, and genuine distributed-systems understanding* — not for finishing fast.
+> **Goal:** Build a correct, well-tested, well-documented distributed key-value store backed by a **from-scratch implementation of the Raft consensus algorithm**, optimized for *maximum learning, interview readiness, and genuine distributed-systems understanding* - not for finishing fast.
 >
 > **Profile assumptions (locked):**
 > - Builder is **new to both Go and distributed systems** → each phase front-loads the concepts before the code.
 > - Raft is implemented **from scratch, full spec** (election, replication, persistence, snapshotting, membership changes).
-> - Target depth: **a single Raft group done with deep correctness** — linearizable semantics + Jepsen-style failure testing. Sharding / product layer are stretch goals.
+> - Target depth: **a single Raft group done with deep correctness** - linearizable semantics + Jepsen-style failure testing. Sharding / product layer are stretch goals.
 > - Pace: **learning-quality over speed.** Calendar estimates assume ~10–15 hrs/week; compress proportionally if full-time.
 >
-> **The North Star:** This should be a resume centerpiece. The differentiator is not "I used Raft" — it's *"I implemented Raft from the paper, found and fixed real correctness bugs under fault injection, and can explain every safety/liveness property and the trade-offs I made."*
+> **The North Star:** This should be a resume centerpiece. The differentiator is not "I used Raft" - it's *"I implemented Raft from the paper, found and fixed real correctness bugs under fault injection, and can explain every safety/liveness property and the trade-offs I made."*
 
 ---
 
@@ -38,7 +38,7 @@ These rules shape every phase. Re-read them whenever you're tempted to cut a cor
 
 1. **Learn the concept before writing the code.** Each phase opens with a reading/notes step. You write an `explain/` note *before* the implementation, in your own words. If you can't explain it, you can't build it correctly.
 2. **The Raft paper is law.** Implement against the *Extended Raft paper* (Ongaro & Ousterhout, "In Search of an Understandable Consensus Algorithm"). Every function should map to a figure or section. Keep Figure 2 pinned to your wall.
-3. **Tests are not optional — they're the curriculum.** Distributed systems bugs are invisible without aggressive, randomized, repeatable testing. A feature isn't "done" until it survives the test harness under fault injection.
+3. **Tests are not optional - they're the curriculum.** Distributed systems bugs are invisible without aggressive, randomized, repeatable testing. A feature isn't "done" until it survives the test harness under fault injection.
 4. **Determinism + reproducibility.** Every test failure must be reproducible from a logged seed. Never debug a "flaky" distributed test by re-running and hoping.
 5. **Commit small, commit often, write why.** Each commit is a learning artifact. Commit messages explain *why*, not *what*. Your git history becomes a story you can narrate in interviews.
 6. **Correctness before performance.** No optimization until the linearizability checker is green under chaos. Then benchmark, then optimize, then re-verify.
@@ -66,7 +66,7 @@ These rules shape every phase. Re-read them whenever you're tempted to cut a cor
 └───────────────────────────┬───────────────────────────────────┘
                             │  Propose(cmd) / applyCh
 ┌───────────────────────────▼───────────────────────────────────┐
-│  Raft Consensus Core (the heart — built from scratch)          │
+│  Raft Consensus Core (the heart - built from scratch)          │
 │  - Roles: Follower / Candidate / Leader                        │
 │  - Leader election + heartbeats                                │
 │  - Log replication (AppendEntries)                             │
@@ -99,14 +99,14 @@ These rules shape every phase. Re-read them whenever you're tempted to cut a cor
 | **Concurrency model** | One big mutex per Raft node initially, with disciplined lock/unlock; clearly defined goroutines (ticker, applier, per-peer replicators) | Beginners *must* start simple. Fine-grained locking is a premature optimization that causes 90% of Raft bugs. |
 | **Time** | Injected clock interface (real + mock) | Lets tests control timeouts deterministically. |
 
-### 2.3 The concurrency map (memorize this — it's where bugs live)
+### 2.3 The concurrency map (memorize this - it's where bugs live)
 
 Each Raft node runs a small, fixed set of goroutines:
 
-- **`ticker` goroutine** — fires election timeout / heartbeat timeout, drives state transitions.
-- **`applier` goroutine** — reads committed entries off an internal channel and applies them to the state machine, sending results back to clients.
-- **`replicator` goroutines** (one per peer, leader only) — push `AppendEntries` to followers and react to responses.
-- **RPC handler goroutines** — created by the transport when an inbound RPC arrives.
+- **`ticker` goroutine** - fires election timeout / heartbeat timeout, drives state transitions.
+- **`applier` goroutine** - reads committed entries off an internal channel and applies them to the state machine, sending results back to clients.
+- **`replicator` goroutines** (one per peer, leader only) - push `AppendEntries` to followers and react to responses.
+- **RPC handler goroutines** - created by the transport when an inbound RPC arrives.
 
 > **Interview gold:** Being able to draw this diagram and explain which goroutine holds the lock when, and how you avoid deadlocks (never hold the lock across an RPC call), is a senior-level signal.
 
@@ -117,7 +117,7 @@ Each Raft node runs a small, fixed set of goroutines:
 ```
 systems-project/                      # repo root
 ├── CLAUDE.md                         # the spec / source of truth (see note below)
-├── plan.md                           # THIS FILE — the execution plan
+├── plan.md                           # THIS FILE - the execution plan
 ├── README.md                         # what it is, how to run, a demo GIF, the headline results
 ├── go.mod / go.sum
 ├── Makefile                          # make test / race / lint / bench / chaos
@@ -197,7 +197,7 @@ systems-project/                      # repo root
 > **On `CLAUDE.md`:** the folder is currently empty and has no `CLAUDE.md`. This plan treats your stated idea as the spec. A companion `CLAUDE.md` (the formal spec / source of truth) should be generated next so future sessions and reviewers have one canonical contract.
 
 **Why this structure:**
-- `internal/` enforces real package boundaries — interviewers notice when consensus logic isn't tangled into HTTP handlers.
+- `internal/` enforces real package boundaries - interviewers notice when consensus logic isn't tangled into HTTP handlers.
 - `raft/` is split by *concept* (election, replication, commit, snapshot, membership), not by arbitrary size. Each file maps to a section of the paper.
 - `transport/memnet/` and `test/linearizability/` are the infrastructure that *makes the learning possible*. Investing here early pays off in every later phase.
 - `explain/` is deliberately a first-class folder, not buried in a wiki.
@@ -217,46 +217,46 @@ This is the single highest-leverage habit in the whole plan. **Distributed syste
 6. **Link explanations to code.** Reference `internal/raft/election.go:NN` so the note and code stay synced.
 
 ### Suggested contents
-- `00-glossary.md` — term, log, index, commit, quorum, linearizability, etc. Precise definitions.
-- `01-replicated-state-machines.md` — the mental model the whole field is built on.
-- `02`–`08` — one per Raft subsystem (see folder layout).
-- `04-safety-proofs.md` — the five Raft safety properties (Election Safety, Leader Append-Only, Log Matching, Leader Completeness, State Machine Safety) in your own words, with *why* each holds.
-- `09-bugs-i-found.md` — your debugging war stories.
+- `00-glossary.md` - term, log, index, commit, quorum, linearizability, etc. Precise definitions.
+- `01-replicated-state-machines.md` - the mental model the whole field is built on.
+- `02`–`08` - one per Raft subsystem (see folder layout).
+- `04-safety-proofs.md` - the five Raft safety properties (Election Safety, Leader Append-Only, Log Matching, Leader Completeness, State Machine Safety) in your own words, with *why* each holds.
+- `09-bugs-i-found.md` - your debugging war stories.
 
 ---
 
 ## 5. Learning Roadmap
 
-A dependency-ordered list of what to learn, and *when*. Don't binge it all up front — learn each block right before the phase that needs it (just-in-time learning sticks better).
+A dependency-ordered list of what to learn, and *when*. Don't binge it all up front - learn each block right before the phase that needs it (just-in-time learning sticks better).
 
-### Track A — Go fundamentals (before Phase 1)
+### Track A - Go fundamentals (before Phase 1)
 - Go syntax, structs, interfaces, error handling, slices/maps semantics.
 - Packages, modules, `go test`, table-driven tests.
 - **Concurrency (critical):** goroutines, channels, `select`, `sync.Mutex`/`RWMutex`, `sync.WaitGroup`, `sync.Cond`, `context.Context`.
-- The **race detector** (`go test -race`) — you will live in this.
+- The **race detector** (`go test -race`) - you will live in this.
 - Resources: *A Tour of Go*, *Effective Go*, "Go Concurrency Patterns" (Rob Pike talk).
 
-### Track B — Distributed systems fundamentals (parallel with Phase 0–1)
+### Track B - Distributed systems fundamentals (parallel with Phase 0–1)
 - Why distributed systems: replication for fault tolerance and availability.
-- **Failure models:** crash-stop, crash-recovery, network partitions, message loss/reorder/duplication, asynchrony. (Not Byzantine — Raft assumes non-Byzantine.)
+- **Failure models:** crash-stop, crash-recovery, network partitions, message loss/reorder/duplication, asynchrony. (Not Byzantine - Raft assumes non-Byzantine.)
 - **The replicated state machine model.**
 - **CAP theorem** (and its nuances/limits), and **PACELC**.
 - **Consistency models:** linearizability vs sequential vs causal vs eventual. Be able to define linearizability precisely.
 - **Consensus:** the problem statement, FLP impossibility (consensus can't be *both* safe and live under pure asynchrony), and how Raft sidesteps it (randomized timeouts for liveness, never sacrificing safety).
 - Quorums and majority intersection.
-- Resources: MIT **6.824 / 6.5840** lectures (free on YouTube) — the single best resource and literally built around building Raft + a KV store.
+- Resources: MIT **6.824 / 6.5840** lectures (free on YouTube) - the single best resource and literally built around building Raft + a KV store.
 
-### Track C — Raft, deeply (Phases 2–8)
+### Track C - Raft, deeply (Phases 2–8)
 - **Read the Extended Raft paper twice.** First for intuition, then with Figure 2 as a checklist.
 - Watch the Raft author talks; play with the **raft.github.io visualization**.
 - Understand each piece *before* coding it: election → replication → safety → persistence → snapshotting → membership → reads.
 
-### Track D — Testing & verification (Phases 1, 9)
+### Track D - Testing & verification (Phases 1, 9)
 - Property-based / randomized testing concepts.
 - **Linearizability checking** (Porcupine library, Jepsen/Knossos ideas).
-- Deterministic simulation testing (FoundationDB / TigerBeetle philosophy) — aspirational but worth knowing the vocabulary.
+- Deterministic simulation testing (FoundationDB / TigerBeetle philosophy) - aspirational but worth knowing the vocabulary.
 
-### Track E — Performance & ops (Phases 10+)
+### Track E - Performance & ops (Phases 10+)
 - Go benchmarking (`testing.B`), `pprof`, flame graphs.
 - Metrics (Prometheus), structured logging.
 - Latency vs throughput, tail latency, batching, pipelining.
@@ -269,7 +269,7 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 ---
 
-### Phase 0 — Foundations & Scaffolding
+### Phase 0 - Foundations & Scaffolding
 **Why it exists:** You're new to both Go and distributed systems. Trying to learn Go *while* debugging consensus is a recipe for despair. This phase builds the muscle and the skeleton so later phases are about *ideas*, not syntax.
 
 **Concepts to learn:**
@@ -286,7 +286,7 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 **Common mistakes:**
 - Skipping the Go concurrency drills and paying for it later in every Raft race.
-- Designing elaborate interfaces before you understand the domain — keep them minimal and let them evolve.
+- Designing elaborate interfaces before you understand the domain - keep them minimal and let them evolve.
 - Not wiring `-race` into CI from day one.
 
 **Success criteria:**
@@ -297,7 +297,7 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 ---
 
-### Phase 1 — Simulated Network + Test Harness (built *before* Raft)
+### Phase 1 - Simulated Network + Test Harness (built *before* Raft)
 **Why it exists:** This is the contrarian, high-payoff move. You build the *testing infrastructure first*. A deterministic in-memory network with knobs for partitions, delays, drops, and reordering is what turns "impossible-to-debug flaky distributed bug" into "reproducible failure from seed 42." Almost every later phase depends on it.
 
 **Concepts to learn:**
@@ -306,12 +306,12 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 - Test cluster orchestration in a single process.
 
 **What to build:**
-- `transport/memnet`: an in-process network connecting N nodes via channels, with controls to: enable/disable connectivity (partitions), add latency, drop/duplicate/reorder messages, and crash/restart nodes — all driven by a seeded RNG.
+- `transport/memnet`: an in-process network connecting N nodes via channels, with controls to: enable/disable connectivity (partitions), add latency, drop/duplicate/reorder messages, and crash/restart nodes - all driven by a seeded RNG.
 - `test/cluster`: helpers to spin up an N-node cluster, find the leader, disconnect/reconnect nodes, crash/restart.
 - A logging convention: every node tags logs with `[node id][term][role]`; logs are timestamped and seed-stamped.
 
 **Common mistakes:**
-- Making the simulated network non-deterministic (using unseeded `rand` or wall-clock time) — then failures can't be reproduced.
+- Making the simulated network non-deterministic (using unseeded `rand` or wall-clock time) - then failures can't be reproduced.
 - Building too little: if you can't inject partitions and restarts, you can't test the interesting cases.
 
 **Success criteria:**
@@ -322,7 +322,7 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 ---
 
-### Phase 2 — Leader Election
+### Phase 2 - Leader Election
 **Why it exists:** Raft's foundation. A cluster must agree on exactly one leader per term, even as nodes crash and networks partition. Election Safety is the first safety property you'll implement and defend.
 
 **Concepts to learn:**
@@ -354,7 +354,7 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 ---
 
-### Phase 3 — Log Replication
+### Phase 3 - Log Replication
 **Why it exists:** Election alone doesn't store data. This phase makes the leader replicate client commands to followers and decide when an entry is *committed* (safely applied). This is the core of "agreement."
 
 **Concepts to learn:**
@@ -372,8 +372,8 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 - The `applier` goroutine delivering committed commands in order.
 
 **Common mistakes:**
-- Truncating the follower's log too eagerly (deleting entries that actually match — only delete on a *conflict*).
-- Committing an entry from a *previous* term just because it's on a majority (the Figure 8 bug — leads to committed-then-lost entries). This is *the* subtle Raft bug; study it.
+- Truncating the follower's log too eagerly (deleting entries that actually match - only delete on a *conflict*).
+- Committing an entry from a *previous* term just because it's on a majority (the Figure 8 bug - leads to committed-then-lost entries). This is *the* subtle Raft bug; study it.
 - Off-by-one errors in log indices (especially once snapshots add an offset later).
 - Applying entries out of order or applying the same entry twice.
 - Re-sending `AppendEntries` in a tight loop and saturating the network.
@@ -387,7 +387,7 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 ---
 
-### Phase 4 — Persistence & Crash Recovery
+### Phase 4 - Persistence & Crash Recovery
 **Why it exists:** A node that forgets `currentTerm`/`votedFor`/`log` on restart can violate safety (e.g., vote twice in a term → two leaders). Durability is what makes the crash-*recovery* model safe.
 
 **Concepts to learn:**
@@ -416,7 +416,7 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 ---
 
-### Phase 5 — KV State Machine, Client Protocol & Exactly-Once Semantics
+### Phase 5 - KV State Machine, Client Protocol & Exactly-Once Semantics
 **Why it exists:** Now Raft becomes a *database*. This phase builds the application layer on top of the log and confronts the messy realities of client interaction: leader redirection, retries, and duplicate detection.
 
 **Concepts to learn:**
@@ -434,9 +434,9 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 **Common mistakes:**
 - No dedup → retried writes double-apply.
-- Blocking forever waiting for an apply that will never come (the entry was overwritten after a leader change) — you need to detect this and tell the client to retry.
+- Blocking forever waiting for an apply that will never come (the entry was overwritten after a leader change) - you need to detect this and tell the client to retry.
 - Letting the dedup table grow unbounded (tie it to client sessions / lowest-seq tracking).
-- Serving reads directly from the map and calling it linearizable (it isn't — yet).
+- Serving reads directly from the map and calling it linearizable (it isn't - yet).
 
 **Success criteria:**
 - A live multi-node cluster serves `put`/`get`/`del`/`cas` via the CLI.
@@ -447,8 +447,8 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 ---
 
-### Phase 6 — Log Compaction & Snapshotting
-**Why it exists:** The log grows forever otherwise — restarts get slow, disk fills, and replaying millions of entries is absurd. Snapshotting lets the state machine's current state replace a prefix of the log. It also fixes the "log offset" indexing that haunts beginners.
+### Phase 6 - Log Compaction & Snapshotting
+**Why it exists:** The log grows forever otherwise - restarts get slow, disk fills, and replaying millions of entries is absurd. Snapshotting lets the state machine's current state replace a prefix of the log. It also fixes the "log offset" indexing that haunts beginners.
 
 **Concepts to learn:**
 - Snapshots = serialized state machine state + the `(lastIncludedIndex, lastIncludedTerm)` it covers.
@@ -463,7 +463,7 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 - App-side: produce and restore from snapshots.
 
 **Common mistakes:**
-- Off-by-one chaos after truncation — *every* index access must respect the offset. (Centralize index math in `log.go`.)
+- Off-by-one chaos after truncation - *every* index access must respect the offset. (Centralize index math in `log.go`.)
 - Forgetting to persist the snapshot and the truncated log atomically-ish (recover consistently).
 - Applying an `InstallSnapshot` that's actually *older* than what the follower already has.
 - Deadlocks from the app→Raft→app callback cycle during snapshot/restore.
@@ -477,12 +477,12 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 ---
 
-### Phase 7 — Cluster Membership Changes
+### Phase 7 - Cluster Membership Changes
 **Why it exists:** Real clusters add/remove nodes without downtime. Done naively, you can momentarily have **two disjoint majorities → two leaders → split brain**. This phase teaches the most safety-critical configuration logic in Raft.
 
 **Concepts to learn:**
 - Why a direct "switch from old config to new config" is unsafe (overlapping majorities).
-- **Single-server changes** (add or remove one at a time — the simpler approach from the Raft author's thesis) vs **joint consensus** (`C-old,new`). Implement single-server changes; *understand* joint consensus.
+- **Single-server changes** (add or remove one at a time - the simpler approach from the Raft author's thesis) vs **joint consensus** (`C-old,new`). Implement single-server changes; *understand* joint consensus.
 - Configuration entries stored *in the log* and applied as soon as seen (not when committed).
 - Edge cases: removed leader steps down; new servers join as non-voting "learners" to catch up first.
 
@@ -492,7 +492,7 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 - (Recommended) non-voting learner phase so a new node catches up before counting toward quorum.
 
 **Common mistakes:**
-- Allowing two concurrent configuration changes (must be serialized — only one in flight).
+- Allowing two concurrent configuration changes (must be serialized - only one in flight).
 - Using the committed config rather than the latest-in-log config for membership decisions.
 - Adding a fresh, empty node directly to the voting set and stalling commits while it catches up.
 - Not handling the leader removing itself.
@@ -501,12 +501,12 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 - You can grow a 3-node cluster to 5 and shrink back to 3 **while serving traffic**, with no lost commits and no split brain.
 - Fault-injection during membership changes stays linearizable.
 
-**Interview topics prepared:** The hardest Raft topic — membership changes; joint consensus vs single-server; why overlapping majorities matter; learners/non-voting members; "how does etcd/Consul reconfigure safely?"
+**Interview topics prepared:** The hardest Raft topic - membership changes; joint consensus vs single-server; why overlapping majorities matter; learners/non-voting members; "how does etcd/Consul reconfigure safely?"
 
 ---
 
-### Phase 8 — Linearizable Reads
-**Why it exists:** Up to now, reads either go through the log (correct but slow) or read the leader's map (fast but possibly **stale**, because a deposed leader doesn't know it). This phase delivers *fast* reads that are still linearizable — a concept interviewers love to probe.
+### Phase 8 - Linearizable Reads
+**Why it exists:** Up to now, reads either go through the log (correct but slow) or read the leader's map (fast but possibly **stale**, because a deposed leader doesn't know it). This phase delivers *fast* reads that are still linearizable - a concept interviewers love to probe.
 
 **Concepts to learn:**
 - Why a stale leader can serve stale reads (it hasn't heard about the new leader yet).
@@ -525,14 +525,14 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 **Success criteria:**
 - Linearizability checker passes with ReadIndex reads under chaos.
-- Benchmarks show the latency/throughput difference between linearizable and stale reads — and you can explain it.
+- Benchmarks show the latency/throughput difference between linearizable and stale reads - and you can explain it.
 
 **Interview topics prepared:** Linearizability (define it!); why leader reads can be stale; ReadIndex vs lease reads vs follower reads; consistency/performance trade-offs; the no-op-on-election trick.
 
 ---
 
-### Phase 9 — Failure Testing & Linearizability Verification (the credibility phase)
-**Why it exists:** This is what separates a toy from a *credible* distributed system — and it's your strongest interview material. You prove correctness empirically by recording operation histories under chaos and checking them for linearizability.
+### Phase 9 - Failure Testing & Linearizability Verification (the credibility phase)
+**Why it exists:** This is what separates a toy from a *credible* distributed system - and it's your strongest interview material. You prove correctness empirically by recording operation histories under chaos and checking them for linearizability.
 
 **Concepts to learn:**
 - Linearizability *checking*: record a history of `(invocation, response)` events with real-time ordering; a checker (e.g., **Porcupine**) searches for a valid sequential ordering.
@@ -558,12 +558,12 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 - At least a few **real bugs found, fixed, and written up** with the test that now catches each.
 - A documented, reproducible chaos suite anyone can run with one command.
 
-**Interview topics prepared:** *The* differentiator — "I verified linearizability under fault injection." Jepsen methodology; linearizability checking; how you debug distributed bugs; specific war stories from `09-bugs-i-found.md`.
+**Interview topics prepared:** *The* differentiator - "I verified linearizability under fault injection." Jepsen methodology; linearizability checking; how you debug distributed bugs; specific war stories from `09-bugs-i-found.md`.
 
 ---
 
-### Phase 10 — Benchmarking, Observability & Tuning
-**Why it exists:** Now that it's *correct*, measure it, observe it, and make it faster — then re-verify correctness. This adds the performance-engineering and ops dimension interviewers ask about for senior roles.
+### Phase 10 - Benchmarking, Observability & Tuning
+**Why it exists:** Now that it's *correct*, measure it, observe it, and make it faster - then re-verify correctness. This adds the performance-engineering and ops dimension interviewers ask about for senior roles.
 
 **Concepts to learn:**
 - Throughput vs latency; tail latency (p50/p99/p999); Little's Law intuition.
@@ -596,15 +596,15 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 | Milestone | Definition of done | Demo you can show |
 |---|---|---|
-| **M0 — Skeleton** (end P0–P1) | CI green with `-race`; deterministic sim-network + cluster harness works. | "I can spin up a 5-node cluster in a test and partition it deterministically." |
-| **M1 — It elects** (end P2) | Stable leader election under partitions/crashes; Election Safety holds over thousands of seeds. | Live: kill the leader, watch a new one get elected. |
-| **M2 — It replicates** (end P3) | Logs converge; committed entries never lost across leader changes. | Propose values, kill leader, show data survives. |
-| **M3 — It survives crashes** (end P4) | Crash/restart any node, no committed data lost. | Kill all nodes, restart, data intact. |
-| **M4 — It's a database** (end P5) | Live cluster serves put/get/del/cas via CLI with exactly-once semantics. | Terminal demo of the KV store with retries. |
-| **M5 — It scales operationally** (end P6–P7) | Bounded logs via snapshots; membership changes live without split brain. | Grow 3→5 nodes while serving traffic. |
-| **M6 — It's fast *and* correct** (end P8) | Linearizable ReadIndex reads; trade-off benchmarked. | Show linearizable vs stale read latency. |
-| **M7 — It's credible** (end P9) | Thousands of chaos runs pass linearizability; real bugs documented. | `make chaos` runs green; walk through `09-bugs-i-found.md`. |
-| **M8 — It's measured** (end P10) | Documented benchmarks; observability; a verified optimization. | Grafana dashboard during a failover; before/after numbers. |
+| **M0 - Skeleton** (end P0–P1) | CI green with `-race`; deterministic sim-network + cluster harness works. | "I can spin up a 5-node cluster in a test and partition it deterministically." |
+| **M1 - It elects** (end P2) | Stable leader election under partitions/crashes; Election Safety holds over thousands of seeds. | Live: kill the leader, watch a new one get elected. |
+| **M2 - It replicates** (end P3) | Logs converge; committed entries never lost across leader changes. | Propose values, kill leader, show data survives. |
+| **M3 - It survives crashes** (end P4) | Crash/restart any node, no committed data lost. | Kill all nodes, restart, data intact. |
+| **M4 - It's a database** (end P5) | Live cluster serves put/get/del/cas via CLI with exactly-once semantics. | Terminal demo of the KV store with retries. |
+| **M5 - It scales operationally** (end P6–P7) | Bounded logs via snapshots; membership changes live without split brain. | Grow 3→5 nodes while serving traffic. |
+| **M6 - It's fast *and* correct** (end P8) | Linearizable ReadIndex reads; trade-off benchmarked. | Show linearizable vs stale read latency. |
+| **M7 - It's credible** (end P9) | Thousands of chaos runs pass linearizability; real bugs documented. | `make chaos` runs green; walk through `09-bugs-i-found.md`. |
+| **M8 - It's measured** (end P10) | Documented benchmarks; observability; a verified optimization. | Grafana dashboard during a failover; before/after numbers. |
 
 > **Resume-ready point:** M7. Everything after is polish/depth. M4 is the minimum "it works" demo; M7 is the "I actually understand distributed systems" proof.
 
@@ -612,19 +612,19 @@ A dependency-ordered list of what to learn, and *when*. Don't binge it all up fr
 
 ## 8. Testing Strategy
 
-A layered pyramid — each layer catches different bugs.
+A layered pyramid - each layer catches different bugs.
 
-1. **Unit tests** — pure logic: vote granting rules, log consistency check, commit-index math, snapshot index arithmetic. Table-driven. Fast, run on every save.
-2. **Component/integration tests (in-process cluster)** — the bread and butter. Spin up N nodes over the simulated network; assert election, replication, persistence properties. Model these on the **MIT 6.5840 Raft test suite** (`TestInitialElection`, `TestReElection`, `TestBasicAgree`, `TestFailAgree`, `TestRejoin`, `TestBackup`, `TestPersist*`, `TestSnapshot*`, etc.) — re-implement equivalents; they're a battle-tested checklist of what can go wrong.
-3. **Property/randomized tests** — random operation sequences + random faults, asserting invariants (one leader per term; logs never diverge on committed entries; applied order identical across nodes).
-4. **Linearizability tests** — record histories, check with Porcupine (Phase 9).
-5. **Chaos/soak tests** — long runs under continuous nemesis activity (Phase 9).
-6. **End-to-end tests** — real gRPC transport, real storage, real CLI driving a real cluster (Phase 5+).
+1. **Unit tests** - pure logic: vote granting rules, log consistency check, commit-index math, snapshot index arithmetic. Table-driven. Fast, run on every save.
+2. **Component/integration tests (in-process cluster)** - the bread and butter. Spin up N nodes over the simulated network; assert election, replication, persistence properties. Model these on the **MIT 6.5840 Raft test suite** (`TestInitialElection`, `TestReElection`, `TestBasicAgree`, `TestFailAgree`, `TestRejoin`, `TestBackup`, `TestPersist*`, `TestSnapshot*`, etc.) - re-implement equivalents; they're a battle-tested checklist of what can go wrong.
+3. **Property/randomized tests** - random operation sequences + random faults, asserting invariants (one leader per term; logs never diverge on committed entries; applied order identical across nodes).
+4. **Linearizability tests** - record histories, check with Porcupine (Phase 9).
+5. **Chaos/soak tests** - long runs under continuous nemesis activity (Phase 9).
+6. **End-to-end tests** - real gRPC transport, real storage, real CLI driving a real cluster (Phase 5+).
 
 **Cross-cutting rules:**
 - **Always run with `-race`.** Make it the default in CI and `make test`.
 - **Every test is seeded and reproducible.** Print the seed; allow `SEED=… make test` to replay.
-- **Run flaky-looking tests in a loop** (`go test -run X -count=100`) — in distributed code, a 1-in-50 failure is a real bug, not flakiness.
+- **Run flaky-looking tests in a loop** (`go test -run X -count=100`) - in distributed code, a 1-in-50 failure is a real bug, not flakiness.
 - **No feature is "done" until its tests pass under fault injection**, not just happy path.
 
 `docs/TESTING.md` documents how to run each layer and what each guards.
@@ -636,11 +636,11 @@ A layered pyramid — each layer catches different bugs.
 The heart of credibility. The simulated network (Phase 1) makes all of this deterministic and reproducible.
 
 **Failure modes to inject:**
-- **Network partitions** — isolate a node, isolate a minority, isolate the leader, symmetric and asymmetric partitions.
-- **Node crashes** — crash-stop and crash-recovery (restart, reload persistent state).
-- **Message faults** — drop, duplicate, delay, reorder.
-- **Clock issues** — skew/pauses (matters for lease reads; also simulates GC pauses).
-- **Slow nodes** — a node that's alive but lagging.
+- **Network partitions** - isolate a node, isolate a minority, isolate the leader, symmetric and asymmetric partitions.
+- **Node crashes** - crash-stop and crash-recovery (restart, reload persistent state).
+- **Message faults** - drop, duplicate, delay, reorder.
+- **Clock issues** - skew/pauses (matters for lease reads; also simulates GC pauses).
+- **Slow nodes** - a node that's alive but lagging.
 
 **Named nemesis scenarios (each seeded, in `test/chaos/scenarios`):**
 | Scenario | What it stresses |
@@ -668,11 +668,11 @@ The heart of credibility. The simulated network (Phase 1) makes all of this dete
 ## 10. Benchmarking Plan
 
 **What to measure:**
-- **Throughput** — committed ops/sec for write-heavy, read-heavy (linearizable vs stale), and mixed workloads, across cluster sizes (3 vs 5 nodes).
-- **Latency** — p50/p99/p999 commit latency; client-observed latency. Always report tails, not just averages.
-- **Recovery time** — time-to-new-leader after leader loss; time for a lagging node to catch up via snapshot.
-- **Scalability** — how throughput/latency change from 3→5→7 nodes (and *why* it gets slower, not just that it does).
-- **Resource cost** — CPU, allocations (via `pprof`), log/disk growth over time.
+- **Throughput** - committed ops/sec for write-heavy, read-heavy (linearizable vs stale), and mixed workloads, across cluster sizes (3 vs 5 nodes).
+- **Latency** - p50/p99/p999 commit latency; client-observed latency. Always report tails, not just averages.
+- **Recovery time** - time-to-new-leader after leader loss; time for a lagging node to catch up via snapshot.
+- **Scalability** - how throughput/latency change from 3→5→7 nodes (and *why* it gets slower, not just that it does).
+- **Resource cost** - CPU, allocations (via `pprof`), log/disk growth over time.
 
 **Methodology (document in `docs/BENCHMARKS.md`):**
 - Fixed workload generators with seeds; warm-up period excluded; multiple runs reported with variance.
@@ -692,20 +692,20 @@ The heart of credibility. The simulated network (Phase 1) makes all of this dete
 
 ## 11. Documentation Strategy
 
-Two audiences, two doc sets — keep them distinct.
+Two audiences, two doc sets - keep them distinct.
 
-**A) `explain/` — for *you* and for interview prep (learning notes).** See Section 4. Written *as you learn*, in your own words, concept-first, with the bugs log as the centerpiece.
+**A) `explain/` - for *you* and for interview prep (learning notes).** See Section 4. Written *as you learn*, in your own words, concept-first, with the bugs log as the centerpiece.
 
-**B) `docs/` — for *readers* (recruiters, reviewers, your future self).** Polished, outward-facing:
-- `README.md` (root) — the 30-second pitch: what it is, a demo GIF/asciinema, headline results ("survives partitions; thousands of chaos runs pass linearizability; X ops/sec"), quickstart, and links into `docs/`. This is what gets you the interview — make it excellent.
-- `docs/ARCHITECTURE.md` — the layered design, the concurrency map, component responsibilities, diagrams.
-- `docs/DESIGN-DECISIONS.md` — **ADR-style** records: each significant decision (single-mutex vs fine-grained locking, single-server vs joint-consensus membership, ReadIndex vs lease reads) with context, options, choice, and trade-offs. *Interviewers love ADRs* — they show you reason about trade-offs.
-- `docs/TESTING.md` — the test pyramid, how to run each layer, the chaos suite.
-- `docs/BENCHMARKS.md` — methodology + results (Section 10).
-- `docs/DEMO.md` — scripted live demos (kill the leader, grow the cluster) you can reproduce in an interview.
+**B) `docs/` - for *readers* (recruiters, reviewers, your future self).** Polished, outward-facing:
+- `README.md` (root) - the 30-second pitch: what it is, a demo GIF/asciinema, headline results ("survives partitions; thousands of chaos runs pass linearizability; X ops/sec"), quickstart, and links into `docs/`. This is what gets you the interview - make it excellent.
+- `docs/ARCHITECTURE.md` - the layered design, the concurrency map, component responsibilities, diagrams.
+- `docs/DESIGN-DECISIONS.md` - **ADR-style** records: each significant decision (single-mutex vs fine-grained locking, single-server vs joint-consensus membership, ReadIndex vs lease reads) with context, options, choice, and trade-offs. *Interviewers love ADRs* - they show you reason about trade-offs.
+- `docs/TESTING.md` - the test pyramid, how to run each layer, the chaos suite.
+- `docs/BENCHMARKS.md` - methodology + results (Section 10).
+- `docs/DEMO.md` - scripted live demos (kill the leader, grow the cluster) you can reproduce in an interview.
 
 **Process rules:**
-- Update docs *with* the code (a phase isn't done until its docs are updated) — use the `document-release`-style discipline.
+- Update docs *with* the code (a phase isn't done until its docs are updated) - use the `document-release`-style discipline.
 - Diagrams in Mermaid or committed images; keep them in sync with code.
 - Git history is documentation too: small, well-messaged commits that narrate the build.
 
@@ -713,7 +713,7 @@ Two audiences, two doc sets — keep them distinct.
 
 ## 12. Timeline Estimates
 
-Assumes **~10–15 hrs/week** (part-time, sustained) and *learning-first* pacing. Multiply down by ~3–4× for full-time. Ranges reflect that you're new to both Go and DS — the early phases especially may run long, and that's *expected and fine*.
+Assumes **~10–15 hrs/week** (part-time, sustained) and *learning-first* pacing. Multiply down by ~3–4× for full-time. Ranges reflect that you're new to both Go and DS - the early phases especially may run long, and that's *expected and fine*.
 
 | Phase | Focus | Part-time estimate | Notes |
 |---|---|---|---|
@@ -738,21 +738,21 @@ Assumes **~10–15 hrs/week** (part-time, sustained) and *learning-first* pacing
 
 Tackle in roughly this order *after* M7. Each is independently resume-worthy.
 
-1. **Sharded / multi-Raft KV store (6.824 Lab 4 style)** — multiple Raft groups + a shard controller that assigns shards to groups, with live shard migration. This is the single biggest step up in scope and signal ("I built a *horizontally scalable* consistent store"). Re-run linearizability across shard moves.
-2. **Pluggable durable storage (BoltDB/Pebble)** — swap file storage for an embedded LSM/B-tree engine via the `Storage` interface; benchmark the difference. Shows clean abstractions + storage-engine awareness.
-3. **gRPC + TLS + auth + a polished CLI/HTTP API** — make it feel like a real product; mutual TLS between nodes.
-4. **Leader leases & follower reads** — beyond ReadIndex; quantify the consistency/latency trade-offs.
-5. **Observability suite** — Prometheus + Grafana dashboards, distributed tracing (OpenTelemetry) of a write through consensus.
-6. **Deterministic simulation testing (DST)** — push the sim-network toward FoundationDB/TigerBeetle-style full determinism; run "100 years of failures" overnight.
-7. **Docker Compose / Kubernetes deployment** — a 5-node cluster you can `docker compose up`; a StatefulSet on k8s. Great for demos.
-8. **Pre-vote & CheckQuorum** — production-grade election stability (prevents term inflation from a flapping partitioned node). Shows you've read beyond the basic paper.
-9. **Write a blog series / talk** — turn `explain/` into public posts. Teaching is the ultimate interview prep and a strong public signal.
+1. **Sharded / multi-Raft KV store (6.824 Lab 4 style)** - multiple Raft groups + a shard controller that assigns shards to groups, with live shard migration. This is the single biggest step up in scope and signal ("I built a *horizontally scalable* consistent store"). Re-run linearizability across shard moves.
+2. **Pluggable durable storage (BoltDB/Pebble)** - swap file storage for an embedded LSM/B-tree engine via the `Storage` interface; benchmark the difference. Shows clean abstractions + storage-engine awareness.
+3. **gRPC + TLS + auth + a polished CLI/HTTP API** - make it feel like a real product; mutual TLS between nodes.
+4. **Leader leases & follower reads** - beyond ReadIndex; quantify the consistency/latency trade-offs.
+5. **Observability suite** - Prometheus + Grafana dashboards, distributed tracing (OpenTelemetry) of a write through consensus.
+6. **Deterministic simulation testing (DST)** - push the sim-network toward FoundationDB/TigerBeetle-style full determinism; run "100 years of failures" overnight.
+7. **Docker Compose / Kubernetes deployment** - a 5-node cluster you can `docker compose up`; a StatefulSet on k8s. Great for demos.
+8. **Pre-vote & CheckQuorum** - production-grade election stability (prevents term inflation from a flapping partitioned node). Shows you've read beyond the basic paper.
+9. **Write a blog series / talk** - turn `explain/` into public posts. Teaching is the ultimate interview prep and a strong public signal.
 
 ---
 
 ## 14. Interview Readiness Map
 
-Quick index of "if asked about X, I built/learned it in Phase Y" — rehearse these.
+Quick index of "if asked about X, I built/learned it in Phase Y" - rehearse these.
 
 | Interview theme | Where it's covered | Your one-line proof |
 |---|---|---|
@@ -764,7 +764,7 @@ Quick index of "if asked about X, I built/learned it in Phase Y" — rehearse th
 | Linearizability | P8, P9 | "ReadIndex reads, verified linearizable by Porcupine under chaos." |
 | Membership / reconfiguration | P7 | "Single-server changes; grew/shrank a cluster live without split brain." |
 | Testing distributed systems | P1, P9 | "Deterministic sim-network + Jepsen-style nemesis + linearizability checking, all reproducible from seeds." |
-| Debugging distributed bugs | P9 | "See `explain/09-bugs-i-found.md` — here's a war story." |
+| Debugging distributed bugs | P9 | "See `explain/09-bugs-i-found.md` - here's a war story." |
 | Performance / consensus cost | P10 | "Batching + pipelining gave X% throughput; I re-verified correctness after." |
 | System design trade-offs | docs/DESIGN-DECISIONS.md | "ADRs: single-mutex vs fine-grained, ReadIndex vs lease, etc." |
 | CAP / consistency models | P0, P5, P8 | "I can place my system on the CAP/PACELC map and explain the read-consistency knob I built." |
@@ -773,16 +773,16 @@ Quick index of "if asked about X, I built/learned it in Phase Y" — rehearse th
 
 ## 15. Reference Materials
 
-- **Raft Extended Paper** — Ongaro & Ousterhout, *In Search of an Understandable Consensus Algorithm (Extended Version)*. Your primary reference; Figure 2 is the contract.
-- **Diego Ongaro's PhD thesis** — *Consensus: Bridging Theory and Practice* (membership changes, single-server reconfiguration, optimizations).
-- **MIT 6.5840 (formerly 6.824)** — lectures + Raft/KV labs. The closest thing to a guided version of this project. Use their test suite as a correctness checklist.
-- **raft.github.io** — interactive visualization + implementations list.
-- **Porcupine** — Go linearizability checker (Phase 9).
-- **Jepsen** (jepsen.io) — methodology and analyses; read a few reports to internalize how distributed systems break.
+- **Raft Extended Paper** - Ongaro & Ousterhout, *In Search of an Understandable Consensus Algorithm (Extended Version)*. Your primary reference; Figure 2 is the contract.
+- **Diego Ongaro's PhD thesis** - *Consensus: Bridging Theory and Practice* (membership changes, single-server reconfiguration, optimizations).
+- **MIT 6.5840 (formerly 6.824)** - lectures + Raft/KV labs. The closest thing to a guided version of this project. Use their test suite as a correctness checklist.
+- **raft.github.io** - interactive visualization + implementations list.
+- **Porcupine** - Go linearizability checker (Phase 9).
+- **Jepsen** (jepsen.io) - methodology and analyses; read a few reports to internalize how distributed systems break.
 - **Go:** *A Tour of Go*, *Effective Go*, "Go Concurrency Patterns" (Rob Pike).
-- **Inspiration codebases (read, don't copy):** `etcd/raft`, `hashicorp/raft` — *after* you've built your own, to compare engineering choices.
+- **Inspiration codebases (read, don't copy):** `etcd/raft`, `hashicorp/raft` - *after* you've built your own, to compare engineering choices.
 
 ---
 
 ### How to use this plan
-Work top-to-bottom through the phases. For each: **read → write the `explain/` note → build → test under fault injection → update docs → commit.** Don't advance until the phase's success criteria hold under `-race` and (from P9 on) the chaos suite. The goal isn't to finish — it's to *understand*, and to have the artifacts (`explain/09-bugs-i-found.md`, the chaos suite, the benchmarks, the ADRs) that prove it.
+Work top-to-bottom through the phases. For each: **read → write the `explain/` note → build → test under fault injection → update docs → commit.** Don't advance until the phase's success criteria hold under `-race` and (from P9 on) the chaos suite. The goal isn't to finish - it's to *understand*, and to have the artifacts (`explain/09-bugs-i-found.md`, the chaos suite, the benchmarks, the ADRs) that prove it.

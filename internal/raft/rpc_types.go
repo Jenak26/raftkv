@@ -4,7 +4,7 @@ package raft
 // the extended Raft paper. They are transport-agnostic plain structs; the
 // transport layer is responsible for actually moving them between nodes.
 
-// LogEntry is one entry in the replicated log. Command is an opaque blob — the
+// LogEntry is one entry in the replicated log. Command is an opaque blob - the
 // Raft layer never interprets it; the application (kv) encodes and decodes it.
 //
 // A configuration-change entry instead carries Config (the new member set) and a

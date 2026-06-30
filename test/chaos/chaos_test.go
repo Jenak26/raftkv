@@ -1,8 +1,8 @@
 // Package chaos is the credibility suite: it runs a live KV cluster under a
 // seeded nemesis (partitions, crashes, restarts) while concurrent clients issue
 // operations, records the real-time history of those operations, and checks it for
-// linearizability. This is the Jepsen-style methodology — generate, perturb,
-// record, verify — made fully reproducible by the deterministic simulated network.
+// linearizability. This is the Jepsen-style methodology - generate, perturb,
+// record, verify - made fully reproducible by the deterministic simulated network.
 //
 // Every run prints its seed; a violation is replayable with:
 //
@@ -248,7 +248,7 @@ func runChaos(t *testing.T, seed int64) {
 		t.Fatalf("no operations recorded (seed=%d)", seed)
 	}
 	if ok, badKey := lin.Check(hist); !ok {
-		t.Fatalf("LINEARIZABILITY VIOLATION (seed=%d): key %q over %d ops — reproduce with: make chaos SEED=%d",
+		t.Fatalf("LINEARIZABILITY VIOLATION (seed=%d): key %q over %d ops - reproduce with: make chaos SEED=%d",
 			seed, badKey, len(hist), seed)
 	}
 	t.Logf("seed=%d: %d operations linearizable under chaos", seed, len(hist))

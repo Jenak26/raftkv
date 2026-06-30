@@ -17,7 +17,7 @@ import (
 //   - The new bytes are written to a sibling temp file and fsynced, so they are on
 //     stable media before anything points at them.
 //   - rename(2) atomically swaps the temp file into the final name. A crash leaves
-//     either the complete old file or the complete new one — never a torn mix.
+//     either the complete old file or the complete new one - never a torn mix.
 //   - The directory is fsynced so the rename itself survives a power loss.
 //
 // SaveStateAndSnapshot writes both files this way. The pair is not updated under a

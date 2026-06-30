@@ -20,7 +20,7 @@ func TestCheckerAcceptsSequentialHistory(t *testing.T) {
 }
 
 func TestCheckerAcceptsValidConcurrentHistory(t *testing.T) {
-	// Get overlaps the Put and observes the pre-Put (absent) state — legal, because
+	// Get overlaps the Put and observes the pre-Put (absent) state - legal, because
 	// the Get can be linearized before the Put.
 	h := []Operation{
 		op(OpPut, "k", "a", "", "", true, 1, 4),
@@ -33,7 +33,7 @@ func TestCheckerAcceptsValidConcurrentHistory(t *testing.T) {
 
 func TestCheckerRejectsStaleRead(t *testing.T) {
 	// The Get begins strictly after the Put returned, yet sees the absent state.
-	// No linearization respects this — it must be flagged.
+	// No linearization respects this - it must be flagged.
 	h := []Operation{
 		op(OpPut, "k", "a", "", "", true, 1, 2),
 		op(OpGet, "k", "", "", "", false, 3, 4),

@@ -187,7 +187,7 @@ func TestMinorityCannotElect(t *testing.T) {
 }
 
 // sampleSafety repeatedly checks, over dur, that no term is ever claimed by more
-// than one leader — the Election Safety property.
+// than one leader - the Election Safety property.
 func sampleSafety(t *testing.T, c *Cluster, dur time.Duration) {
 	t.Helper()
 	deadline := time.Now().Add(dur)

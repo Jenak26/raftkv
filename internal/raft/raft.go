@@ -17,7 +17,7 @@
 //
 // Concurrency discipline: a single mutex guards all mutable node state. The one
 // rule that prevents the classic Raft deadlock is that we NEVER hold the mutex
-// while making an outbound RPC — every Send* call happens after the lock is
+// while making an outbound RPC - every Send* call happens after the lock is
 // released, and replies are processed by re-acquiring it.
 package raft
 
@@ -46,8 +46,8 @@ var (
 // RPCTransport is the outbound half of node-to-node communication, as Raft needs
 // it. It is declared here (rather than imported from the transport package) to
 // avoid an import cycle: the transport package imports raft for the RPC argument
-// types, so raft cannot import transport. Any concrete transport — the simulated
-// memnet or a production gRPC client — structurally satisfies this interface.
+// types, so raft cannot import transport. Any concrete transport - the simulated
+// memnet or a production gRPC client - structurally satisfies this interface.
 type RPCTransport interface {
 	SendRequestVote(ctx context.Context, to int, args *RequestVoteArgs) (*RequestVoteReply, error)
 	SendAppendEntries(ctx context.Context, to int, args *AppendEntriesArgs) (*AppendEntriesReply, error)
@@ -309,8 +309,8 @@ func (rf *Raft) randTimeout() time.Duration {
 func (rf *Raft) resetHeard() { rf.lastHeard = rf.clk.Now() }
 
 // ticker is the single goroutine that drives elections. Each cycle it waits a
-// fresh randomized timeout, then — if it is not the leader and has heard nothing
-// for that long — starts an election. Randomizing the wait each cycle is what
+// fresh randomized timeout, then - if it is not the leader and has heard nothing
+// for that long - starts an election. Randomizing the wait each cycle is what
 // breaks symmetry and prevents perpetual split votes (Raft's liveness answer to
 // FLP).
 func (rf *Raft) ticker() {
@@ -328,7 +328,7 @@ func (rf *Raft) ticker() {
 			return
 		}
 		// A node that is not a member of its own configuration (e.g. one that was
-		// removed) must not campaign — otherwise it would time out forever and
+		// removed) must not campaign - otherwise it would time out forever and
 		// disrupt the cluster with ever-higher terms.
 		startElection := rf.role != Leader && rf.inConfig(rf.id) &&
 			rf.clk.Now().Sub(rf.lastHeard) >= timeout
@@ -368,7 +368,7 @@ func (rf *Raft) startElection() {
 	if majority == 1 {
 		// Single-node cluster: the self-vote is already a majority and there are no
 		// peers to ask, so we win the election immediately. Without this, promotion
-		// would never happen — the votes>=majority check below only runs inside a
+		// would never happen - the votes>=majority check below only runs inside a
 		// per-peer reply goroutine, of which there are none when we are the only node.
 		rf.becomeLeader()
 		rf.mu.Unlock()
@@ -618,7 +618,7 @@ func (rf *Raft) backtrack(reply *AppendEntriesReply, prevIndex int) int {
 }
 
 // maybeAdvanceCommit advances commitIndex to the highest index replicated on a
-// majority — but only for an entry from the current term (the Figure 8 rule:
+// majority - but only for an entry from the current term (the Figure 8 rule:
 // committing a prior-term entry by count alone can lose it). Must hold mu.
 func (rf *Raft) maybeAdvanceCommit() {
 	majority := rf.majority()
@@ -737,7 +737,7 @@ func (rf *Raft) Config() []int {
 }
 
 // ReadIndex returns a commit index such that any read reflecting the state machine
-// applied through that index is linearizable — without writing to the log. ok is
+// applied through that index is linearizable - without writing to the log. ok is
 // false if this node is not the leader, has not yet committed an entry in its
 // current term (its election no-op), or cannot confirm it is still the leader.
 //
@@ -750,7 +750,7 @@ func (rf *Raft) Config() []int {
 func (rf *Raft) ReadIndex(ctx context.Context) (index int, ok bool) {
 	rf.mu.Lock()
 	if rf.role != Leader || rf.commitIndex < rf.noopIndex {
-		// Not leader, or our term's no-op has not committed yet — the caller retries.
+		// Not leader, or our term's no-op has not committed yet - the caller retries.
 		rf.mu.Unlock()
 		return 0, false
 	}
@@ -765,7 +765,7 @@ func (rf *Raft) ReadIndex(ctx context.Context) (index int, ok bool) {
 }
 
 // confirmLeadership returns true once a majority of the current configuration has,
-// in this heartbeat round, confirmed it knows no higher term than term — i.e. our
+// in this heartbeat round, confirmed it knows no higher term than term - i.e. our
 // leadership is still current. It returns false on ctx expiry or if we are no
 // longer leader for term.
 func (rf *Raft) confirmLeadership(ctx context.Context, term int) bool {
@@ -968,7 +968,7 @@ func (rf *Raft) HandleAppendEntries(args *AppendEntriesArgs) *AppendEntriesReply
 	}
 
 	// Merge entries, truncating only on an actual conflict (never delete
-	// matching entries — that is the classic over-eager-truncation bug).
+	// matching entries - that is the classic over-eager-truncation bug).
 	changed := false
 	for j, e := range args.Entries {
 		pos := args.PrevLogIndex + 1 + j
@@ -1092,7 +1092,7 @@ func (rf *Raft) lastLogIndex() int { return rf.log[len(rf.log)-1].Index }
 func (rf *Raft) lastLogTerm() int  { return rf.log[len(rf.log)-1].Term }
 
 // entryAt returns the log entry at log index i. It panics if i is below the
-// snapshot anchor (a programming error — that entry was compacted away) or beyond
+// snapshot anchor (a programming error - that entry was compacted away) or beyond
 // the end.
 func (rf *Raft) entryAt(i int) LogEntry { return rf.log[i-rf.firstIndex()] }
 

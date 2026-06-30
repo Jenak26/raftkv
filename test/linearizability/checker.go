@@ -7,7 +7,7 @@ import (
 
 // regState is the model state of a single key: a register that may or may not hold
 // a value. Operations on different keys are independent, so the checker partitions
-// the history by key and checks each key's sub-history against this model — which
+// the history by key and checks each key's sub-history against this model - which
 // keeps each search small and tractable.
 type regState struct {
 	val    string
@@ -60,9 +60,9 @@ func Check(history []Operation) (ok bool, badKey string) {
 // linearizableKey runs the WGL search on one key's operations: find a total order
 // consistent with real time whose every step is legal for the register model.
 //
-// The search repeatedly picks a "minimal" not-yet-linearized operation — one that
+// The search repeatedly picks a "minimal" not-yet-linearized operation - one that
 // no other un-linearized operation must precede (no undone j with j.Return <
-// i.Call) — tentatively linearizes it if the model allows its observed result, and
+// i.Call) - tentatively linearizes it if the model allows its observed result, and
 // recurses; it backtracks otherwise. Memoizing on (set-linearized, state) collapses
 // the otherwise exponential search, because a register has few distinct states.
 func linearizableKey(ops []Operation) bool {
@@ -72,7 +72,7 @@ func linearizableKey(ops []Operation) bool {
 	}
 	if n > 62 {
 		// The bitmask memo uses uint64; very long single-key histories would need a
-		// different representation. Panic loudly rather than check incorrectly — the
+		// different representation. Panic loudly rather than check incorrectly - the
 		// workload is expected to spread operations across enough keys.
 		panic(fmt.Sprintf("linearizability: %d ops on one key exceeds the 62-op checker limit; use more keys", n))
 	}

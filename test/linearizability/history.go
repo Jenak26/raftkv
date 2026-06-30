@@ -1,5 +1,5 @@
 // Package linearizability records histories of client operations and checks them
-// for linearizability — the gold-standard correctness test for a distributed
+// for linearizability - the gold-standard correctness test for a distributed
 // store. A history is a set of operations, each with the real time it was invoked
 // and the real time it returned; the checker searches for a single sequential
 // ordering of those operations that (a) respects real-time order (if op A returned

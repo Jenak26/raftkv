@@ -12,13 +12,13 @@ import (
 )
 
 // Errors returned by Server.Submit. All of them mean "this server could not
-// complete your request — retry (elsewhere)"; the Clerk handles them transparently.
+// complete your request - retry (elsewhere)"; the Clerk handles them transparently.
 var (
 	// ErrNotLeader means this server is not the current leader, so it cannot
 	// propose. The client should try another server.
 	ErrNotLeader = errors.New("kv: not leader")
 	// ErrLostLeader means the server proposed the command but a different command
-	// committed at the assigned index — leadership was lost mid-flight. Retrying is
+	// committed at the assigned index - leadership was lost mid-flight. Retrying is
 	// safe because the dedup table makes a re-submit exactly-once.
 	ErrLostLeader = errors.New("kv: lost leadership before commit")
 	// ErrTimeout means the command did not commit within the wait deadline.
@@ -163,7 +163,7 @@ func (s *Server) applyLoop() {
 // result), records the session, and notifies any waiter on this index.
 func (s *Server) applyCommand(m raft.ApplyMsg) {
 	if len(m.Command) == 0 {
-		// An internal Raft entry — an election no-op or a configuration change — not
+		// An internal Raft entry - an election no-op or a configuration change - not
 		// a client command. Advance our applied index (so linearizable reads waiting
 		// on it make progress) but do not decode or dedup it.
 		s.mu.Lock()
@@ -207,7 +207,7 @@ func (s *Server) applyCommand(m raft.ApplyMsg) {
 // linearizableRead serves a read without writing to the log: it obtains a
 // ReadIndex from Raft (which confirms leadership), waits until the state machine
 // has applied through that index, then reads. This guarantees the read reflects
-// every write that committed before the read began — linearizability — at the cost
+// every write that committed before the read began - linearizability - at the cost
 // of one heartbeat round, not a log append.
 func (s *Server) linearizableRead(ctx context.Context, cmd Command) (Result, error) {
 	readIndex, ok := s.rf.ReadIndex(ctx)
@@ -242,7 +242,7 @@ func (s *Server) waitApplied(ctx context.Context, index int) error {
 
 // kvSnapshot is the application state captured in a snapshot: the state machine
 // bytes plus the session/dedup table. Both are replicated state, so both must be
-// captured — omitting the sessions would make already-applied client requests look
+// captured - omitting the sessions would make already-applied client requests look
 // new after a snapshot, breaking exactly-once.
 type kvSnapshot struct {
 	SM       []byte

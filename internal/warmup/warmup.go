@@ -1,5 +1,5 @@
 // Package warmup holds small concurrency exercises whose only purpose is to
-// validate the Phase 0 toolchain — that `go test -race` is wired up and that
+// validate the Phase 0 toolchain - that `go test -race` is wired up and that
 // the build/lint/CI pipeline catches data races. It is intentionally throwaway
 // and may be deleted once Raft development begins.
 package warmup
@@ -7,7 +7,7 @@ package warmup
 import "sync"
 
 // Counter is a goroutine-safe integer counter. Removing the mutex makes the
-// race detector fail TestCounterConcurrent — a quick proof the tooling works.
+// race detector fail TestCounterConcurrent - a quick proof the tooling works.
 type Counter struct {
 	mu sync.Mutex
 	n  int64

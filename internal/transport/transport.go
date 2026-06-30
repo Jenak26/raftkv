@@ -8,7 +8,7 @@
 //     seed.
 //
 // Because both look identical to Raft, every correctness test runs against the
-// simulation transport and every deployment runs against the real one — the
+// simulation transport and every deployment runs against the real one - the
 // foundation of the project's Deterministic Simulation Testing strategy.
 package transport
 
@@ -27,7 +27,7 @@ type Transport interface {
 	SendInstallSnapshot(ctx context.Context, to int, args *raft.InstallSnapshotArgs) (*raft.InstallSnapshotReply, error)
 }
 
-// Server is the receiving half of the RPC contract — the symmetric counterpart
+// Server is the receiving half of the RPC contract - the symmetric counterpart
 // to Transport. A Raft node implements Server so that a Transport (real or
 // simulated) can deliver an incoming RPC to it and hand the reply back to the
 // caller. Handlers must be safe for concurrent calls and must not block

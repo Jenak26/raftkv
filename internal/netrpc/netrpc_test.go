@@ -14,8 +14,8 @@ import (
 	"github.com/janak/raftkv/internal/storage"
 )
 
-// TestNetRPCClusterEndToEnd brings up a real 3-node cluster over loopback TCP —
-// net/rpc transport, real clock, file-free in-memory persisters — and drives it
+// TestNetRPCClusterEndToEnd brings up a real 3-node cluster over loopback TCP -
+// net/rpc transport, real clock, file-free in-memory persisters - and drives it
 // with a Clerk over the real KV client. This is the M4 demo as an automated test:
 // it exercises the production transport that the simulated network never touches.
 func TestNetRPCClusterEndToEnd(t *testing.T) {

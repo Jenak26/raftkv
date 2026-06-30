@@ -18,7 +18,7 @@ type KV interface {
 // Clerk is the client. It hides three realities from the caller: it does not know
 // which server is the leader, the leader can change mid-operation, and any request
 // may be lost. It discovers the leader by trying, follows leadership changes, and
-// retries — reusing one SeqNum across all retries of a logical operation so the
+// retries - reusing one SeqNum across all retries of a logical operation so the
 // server's dedup table collapses duplicates into exactly-once.
 type Clerk struct {
 	servers []KV
@@ -64,7 +64,7 @@ func (c *Clerk) Get(ctx context.Context, key string) (value string, ok bool, err
 
 // GetStale returns the value for key from whatever node answers first, without a
 // leadership round. It is fast but may return slightly stale data (it is not
-// linearizable) — the read-consistency trade-off this knob exists to demonstrate.
+// linearizable) - the read-consistency trade-off this knob exists to demonstrate.
 func (c *Clerk) GetStale(ctx context.Context, key string) (value string, ok bool, err error) {
 	res, err := c.call(ctx, Command{Kind: OpGet, Key: key, ReadStale: true})
 	return res.Value, res.Ok, err

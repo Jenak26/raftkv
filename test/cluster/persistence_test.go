@@ -7,7 +7,7 @@ import (
 )
 
 // logStater lets a test read a node's durable log extent directly, independent of
-// what the applyCollector observed — the strongest proof that state survived a
+// what the applyCollector observed - the strongest proof that state survived a
 // crash is reading it back out of the freshly-restarted node.
 type logStater interface {
 	LogState() (lastIndex, lastTerm, commit int)
@@ -48,7 +48,7 @@ func TestPersistedDataSurvivesFullClusterRestart(t *testing.T) {
 	}
 	waitAppliedAll(t, col, 3, allIDs(3), 5*time.Second)
 
-	// Crash the entire cluster — every node loses its in-RAM term/role/commit.
+	// Crash the entire cluster - every node loses its in-RAM term/role/commit.
 	for id := 0; id < 3; id++ {
 		c.Crash(id)
 	}
@@ -61,7 +61,7 @@ func TestPersistedDataSurvivesFullClusterRestart(t *testing.T) {
 	// still contain the three committed entries right out of the persister.
 	for id := 0; id < 3; id++ {
 		if got := lastLogIndexOf(t, c, id); got < 3 {
-			t.Fatalf("node %d came back with lastLogIndex %d, want >= 3 — committed log was not persisted", id, got)
+			t.Fatalf("node %d came back with lastLogIndex %d, want >= 3 - committed log was not persisted", id, got)
 		}
 	}
 
@@ -80,7 +80,7 @@ func TestPersistedDataSurvivesFullClusterRestart(t *testing.T) {
 // restarted. Throughout, the applyCollector enforces continuously that no two
 // nodes ever apply different commands at the same index. After the chaos stops and
 // the network heals, the cluster must still have a committed prefix and elect a
-// stable leader — proving recovery from durable state works even when recovery
+// stable leader - proving recovery from durable state works even when recovery
 // itself races message loss.
 func TestPersistUnderUnreliableChurn(t *testing.T) {
 	for s := int64(0); s < 3; s++ {

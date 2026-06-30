@@ -1,13 +1,13 @@
 // Package memnet is a deterministic, in-process simulation of the network that
 // connects Raft nodes. It implements transport.Transport so the exact same Raft
 // code that runs over real sockets in production runs over this simulation in
-// tests — the foundation of the project's Deterministic Simulation Testing
+// tests - the foundation of the project's Deterministic Simulation Testing
 // strategy (see docs/ARCHITECTURE.md).
 //
 // Every source of non-determinism is seed-driven: message drops, added latency,
 // and reordering all come from a single seeded RNG, and all timing flows through
-// an injected clock.Clock (a clock.MockClock in tests). That means any failure —
-// however rare — can be replayed exactly by rerunning with the same seed.
+// an injected clock.Clock (a clock.MockClock in tests). That means any failure -
+// however rare - can be replayed exactly by rerunning with the same seed.
 //
 // The model is synchronous request/reply, mirroring the transport.Transport
 // contract: a Send* call blocks until the peer's handler returns a reply or the
@@ -39,8 +39,8 @@ type endpoint struct {
 // the seeded RNG that drives all randomness, and the clock used for latency.
 //
 // A single mutex guards all mutable state. It is held only while inspecting or
-// mutating that state and while consulting the RNG — never while a peer handler
-// runs — so handlers may freely call back into the network.
+// mutating that state and while consulting the RNG - never while a peer handler
+// runs - so handlers may freely call back into the network.
 type Network struct {
 	mu    sync.Mutex
 	rng   *rand.Rand
@@ -85,7 +85,7 @@ func (n *Network) Transport(from int) transport.Transport {
 
 // Crash drops a node's in-RAM server so it can neither receive nor answer RPCs,
 // simulating a process death. Its Persister (held by the caller) survives, so a
-// later Restart reloads from durable state — exactly like a real restart.
+// later Restart reloads from durable state - exactly like a real restart.
 func (n *Network) Crash(id int) {
 	n.mu.Lock()
 	defer n.mu.Unlock()

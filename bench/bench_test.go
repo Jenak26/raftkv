@@ -2,7 +2,7 @@
 // for the KV store over a real 3-node cluster (net/rpc on loopback, real clock).
 // Run with: make bench   (go test -bench=. -benchmem -run='^$' ./bench/...)
 //
-// These numbers quantify the trade-offs the system was built to expose — most
+// These numbers quantify the trade-offs the system was built to expose - most
 // notably linearizable reads (a ReadIndex heartbeat round) versus stale reads
 // (a local read). See docs/BENCHMARKS.md for methodology and results.
 package bench

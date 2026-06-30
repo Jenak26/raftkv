@@ -14,7 +14,7 @@ import (
 
 // deadTransport is an RPCTransport whose every send fails, so a node under test
 // never receives votes or heartbeats. Combined with an un-advanced MockClock
-// (whose timers never fire), it keeps the node perfectly quiescent — letting us
+// (whose timers never fire), it keeps the node perfectly quiescent - letting us
 // test the RPC handlers and persistence in isolation from the cluster.
 type deadTransport struct{}
 
@@ -61,7 +61,7 @@ func TestPersistsTermAndVoteAcrossRestart(t *testing.T) {
 	// votedFor must also have survived: a *different* candidate in the same term
 	// must be refused.
 	if r := rf2.HandleRequestVote(&raft.RequestVoteArgs{Term: 5, CandidateID: 2}); r.VoteGranted {
-		t.Error("granted a second vote in term 5 — votedFor was not restored")
+		t.Error("granted a second vote in term 5 - votedFor was not restored")
 	}
 }
 
