@@ -9,12 +9,30 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/Jenak26/raftkv/ci.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white)](https://github.com/Jenak26/raftkv/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Jenak26/raftkv)
+
+*Click **Open in Codespaces** to get a ready Go environment in your browser, then run `make chaos` to watch the linearizability suite pass under fault injection.*
+
 </div>
 
 **A fault-tolerant key-value store built on a from-scratch implementation of the [Raft consensus algorithm](https://raft.github.io/raft.pdf) - and tested the way real distributed databases are: inside a *deterministic simulation* where the network, clock, and disk are driven by a single seed.** No consensus libraries. No `hashicorp/raft`. The algorithm is built from the extended paper, function by function - election, replication, persistence, snapshotting, membership, and linearizable reads - and then put through a Jepsen-style gauntlet that *proves* it stays correct under partitions, crashes, and message loss.
 
 > [!IMPORTANT]
 > **The deliverable isn't "Raft works." It's "Raft is *provably* correct under chaos - and any failure replays from its seed."** A hand-written linearizability checker verifies that everything clients observed, while a nemesis tore the cluster apart, could only have come from a single correct machine. Three real, deep bugs were found, fixed, and written up as case files in the [**bug museum**](docs/bug-museum/).
+
+---
+
+## 🎬 Live demo
+
+An interactive visualizer ([`cmd/raftviz`](cmd/raftviz)) runs a 5-node cluster in one process and serves a web UI: propose entries and watch them replicate, then **crash or isolate the leader and watch a new one get elected in real time.**
+
+**▶️ Live:** _add your deployed URL here_ &nbsp;·&nbsp; or run it locally in one command:
+
+```bash
+go run ./cmd/raftviz      # then open http://localhost:7860
+```
+
+Deploy it as a single container (Render / Hugging Face / Fly) - see [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ---
 

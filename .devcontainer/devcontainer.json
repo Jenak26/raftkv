@@ -1,0 +1,10 @@
+{
+  "name": "raftkv",
+  "image": "mcr.microsoft.com/devcontainers/go:1",
+  "postCreateCommand": "go build ./...",
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.go"]
+    }
+  }
+}

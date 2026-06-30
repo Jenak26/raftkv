@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>raftkv - live Raft visualizer</title>
+<style>
+  :root {
+    --bg: #0b0f17; --panel: #131a26; --panel2: #0f1521; --line: #233044;
+    --txt: #e6edf6; --dim: #8aa0bd; --accent: #38bdf8;
+    --leader: #22c55e; --candidate: #f59e0b; --follower: #64748b;
+    --down: #ef4444; --isolated: #a855f7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: radial-gradient(1200px 600px at 50% -10%, #16203180, var(--bg));
+    color: var(--txt); font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  h1 .tag { color: var(--accent); }
+  .sub { color: var(--dim); margin: 0 0 24px; }
+  .sub code { background: #1c2738; padding: 1px 6px; border-radius: 5px; color: #cfe3ff; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; align-items: center; }
+  button {
+    background: var(--panel); color: var(--txt); border: 1px solid var(--line);
+    padding: 8px 14px; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 600;
+    transition: transform .06s ease, background .15s ease, border-color .15s ease;
+  }
+  button:hover { background: #1b2738; border-color: #31425c; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--accent); color: #04121d; border-color: var(--accent); }
+  button.ghost { background: transparent; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+  .node {
+    background: linear-gradient(180deg, var(--panel), var(--panel2));
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+    position: relative; overflow: hidden; transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .node::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--follower);
+    transition: background .2s ease;
+  }
+  .node.leader { border-color: #1f6f43; box-shadow: 0 0 0 1px #1f6f4366, 0 8px 30px -12px #22c55e55; }
+  .node.leader::before { background: var(--leader); }
+  .node.candidate::before { background: var(--candidate); }
+  .node.down { opacity: .62; }
+  .node.down::before { background: var(--down); }
+  .node.isolated::before { background: var(--isolated); }
+  .node h3 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: center; justify-content: space-between; }
+  .role {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    padding: 3px 8px; border-radius: 999px; background: #1c2738; color: var(--dim);
+  }
+  .role.Leader { background: #0c2c1a; color: var(--leader); }
+  .role.Candidate { background: #2c2310; color: var(--candidate); }
+  .role.Down { background: #2c1414; color: var(--down); }
+  .role.Isolated { background: #241431; color: var(--isolated); }
+  .stat { display: flex; justify-content: space-between; color: var(--dim); font-size: 13px; margin: 3px 0; }
+  .stat b { color: var(--txt); font-variant-numeric: tabular-nums; }
+  .nbtns { display: flex; gap: 8px; margin-top: 12px; }
+  .nbtns button { flex: 1; padding: 6px 0; font-size: 12.5px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; color: var(--dim); font-size: 13px; margin-top: 22px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .foot { margin-top: 28px; color: var(--dim); font-size: 13px; }
+  .foot a { color: var(--accent); text-decoration: none; }
+  #flash { min-height: 18px; color: var(--candidate); font-size: 13px; margin-left: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🗳️ <span class="tag">raftkv</span> - live Raft visualizer</h1>
+  <p class="sub">A 5-node cluster running the from-scratch <a href="https://raft.github.io/raft.pdf" style="color:var(--accent)">Raft</a> implementation in one process.
+  <b>Propose</b> entries and watch them replicate; <b>crash</b> or <b>isolate</b> the <span style="color:var(--leader)">leader</span> and watch a new one get elected in real time.</p>
+
+  <div class="controls">
+    <button class="primary" onclick="api('/api/propose'); flash('proposed an entry to the leader')">➕ Propose entry</button>
+    <button class="ghost" onclick="api('/api/heal'); flash('healed all partitions')">🌐 Heal all</button>
+    <span id="flash"></span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--leader)"></i> Leader</span>
+    <span><i class="dot" style="background:var(--candidate)"></i> Candidate</span>
+    <span><i class="dot" style="background:var(--follower)"></i> Follower</span>
+    <span><i class="dot" style="background:var(--isolated)"></i> Isolated</span>
+    <span><i class="dot" style="background:var(--down)"></i> Down</span>
+  </div>
+
+  <p class="foot">term = election epoch · commit = highest committed log index · log = entries held.
+  Source &amp; design notes: <a href="https://github.com/Jenak26/raftkv">github.com/Jenak26/raftkv</a></p>
+</div>
+
+<script>
+async function api(path) {
+  try { await fetch(path, { method: 'POST' }); } catch (e) {}
+  refresh();
+}
+function flash(msg) {
+  const f = document.getElementById('flash');
+  f.textContent = msg;
+  clearTimeout(flash._t);
+  flash._t = setTimeout(() => { f.textContent = ''; }, 1800);
+}
+
+function baseRole(role) { return role.startsWith('Isolated:') ? 'Isolated' : role; }
+
+function render(nodes) {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  for (const n of nodes) {
+    const role = baseRole(n.role);
+    const cls = !n.up ? 'down' : !n.connected ? 'isolated'
+      : n.leader ? 'leader' : role === 'Candidate' ? 'candidate' : '';
+    const label = !n.up ? 'Down' : !n.connected ? 'Isolated' : role;
+
+    const card = document.createElement('div');
+    card.className = 'node ' + cls;
+    card.innerHTML = `
+      <h3>Node ${n.id} <span class="role ${label.replace(':','')}">${label}</span></h3>
+      <div class="stat"><span>term</span><b>${n.up ? n.term : '-'}</b></div>
+      <div class="stat"><span>commit</span><b>${n.up ? n.commit : '-'}</b></div>
+      <div class="stat"><span>log</span><b>${n.up ? n.log : '-'}</b></div>
+      <div class="nbtns">
+        ${n.up
+          ? `<button onclick="api('/api/node?id=${n.id}&action=crash')">Crash</button>`
+          : `<button onclick="api('/api/node?id=${n.id}&action=restart')">Restart</button>`}
+        ${n.up && n.connected
+          ? `<button onclick="api('/api/node?id=${n.id}&action=isolate')">Isolate</button>`
+          : n.up ? `<button onclick="api('/api/node?id=${n.id}&action=rejoin')">Rejoin</button>` : ''}
+      </div>`;
+    grid.appendChild(card);
+  }
+}
+
+async function refresh() {
+  try {
+    const r = await fetch('/api/state');
+    const data = await r.json();
+    render(data.nodes);
+  } catch (e) {}
+}
+refresh();
+setInterval(refresh, 400);
+</script>
+</body>
+</html>
