@@ -34,4 +34,8 @@ The general principle I'll carry forward.
 
 ## Index
 
-_(empty — entries arrive starting in Phase 2, and especially Phase 9. Target: 5–10 genuine bugs.)_
+1. [01 — A single-node cluster never elects a leader](01-single-node-never-elects.md) — a liveness gap: the `votes >= majority` promotion check only ran on peer replies, so a lone node (majority = 1) stayed a perpetual candidate. Surfaced in Phase 5.
+2. [02 — Raft delivered internal log entries to the application](02-internal-entries-delivered-to-app.md) — config-change and election-no-op entries (nil `Command`) were handed to the KV layer, which panicked decoding them. The integration of two individually-tested features was broken. Phase 7/8.
+3. [03 — Test harness data race under concurrent chaos](03-harness-data-race.md) — the cluster harness, fine for single-threaded driving, raced when the chaos nemesis and clients drove it at once. Caught by `-race` on the first chaos run. Phase 9.
+
+_(Target: 5–10 genuine bugs, especially from Phase 9 chaos.)_
