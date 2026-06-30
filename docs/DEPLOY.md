@@ -13,7 +13,7 @@ go run ./cmd/raftviz      # then open http://localhost:7860
 ## Option A - Render (simplest; direct GitHub connect)
 
 1. Push this repo to GitHub (already done).
-2. On [render.com](https://render.com): **New → Web Service → Build from a repository**, pick `raftkv`.
+2. On [render.com](https://render.com): **New → Web Service**, then give it the public repo URL `https://github.com/Jenak26/raftkv` (no GitHub connect needed for a public repo).
 3. Set **Runtime / Environment: Docker** (Render finds the root `Dockerfile`). No build/start command needed.
 4. Instance type: **Free**. Create.
 5. Render assigns `$PORT` automatically and gives you a `https://<name>.onrender.com` URL.
