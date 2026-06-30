@@ -32,6 +32,12 @@ type Command struct {
 	Expected string // only used by OpCAS
 	ClientID int64
 	SeqNum   int64
+
+	// ReadStale, when set on an OpGet, asks for a fast read served from the local
+	// state machine of whatever node receives it — possibly stale, not
+	// linearizable. It is never used for writes and never travels through the log
+	// (stale reads are not replicated).
+	ReadStale bool
 }
 
 // Result is the outcome of applying a Command.

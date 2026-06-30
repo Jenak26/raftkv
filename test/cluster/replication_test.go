@@ -222,12 +222,18 @@ func TestLogConvergesAfterPartition(t *testing.T) {
 	c, col := newReplCluster(t, 5, 4)
 	l1, term1 := checkOneLeader(t, c, 3*time.Second)
 
+	// Indices are not hard-coded: a leader appends a no-op on election, so the
+	// first client entry is not at index 1. We track the actual committed indices.
 	expected := map[int][]byte{}
+	lastA := 0
 	for i := 1; i <= 3; i++ {
 		cmd := []byte(fmt.Sprintf("A%d", i))
-		expected[mustProposeToAnyLeader(t, c, cmd)] = cmd
+		idx := mustProposeToAnyLeader(t, c, cmd)
+		expected[idx] = cmd
+		lastA = idx
 	}
-	waitAppliedAll(t, col, 3, allIDs(5), 5*time.Second)
+	waitAppliedAll(t, col, lastA, allIDs(5), 5*time.Second)
+	committedBeforePartition := lastA
 
 	// Trap the old leader in a 2-node minority.
 	others := []int{}
@@ -264,25 +270,29 @@ func TestLogConvergesAfterPartition(t *testing.T) {
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
-	for i := 4; i <= 6; i++ {
+	lastB := 0
+	for i := 1; i <= 3; i++ {
 		cmd := []byte(fmt.Sprintf("B%d", i))
 		if idx, ok := tryPropose(c, l2, cmd); ok {
 			expected[idx] = cmd
+			lastB = idx
 		} else {
 			t.Fatalf("new leader %d rejected proposal", l2)
 		}
 	}
-	waitAppliedAll(t, col, 6, majority, 5*time.Second)
+	waitAppliedAll(t, col, lastB, majority, 5*time.Second)
 
-	// The old leader must not have applied its uncommitted divergent entries.
-	if col.appliedIndex(l1) >= 4 {
-		t.Fatalf("old leader %d applied an uncommitted divergent entry", l1)
+	// The old leader must not have applied anything past the prefix that was
+	// committed before the partition — its divergent OLD-* entries never commit.
+	if col.appliedIndex(l1) > committedBeforePartition {
+		t.Fatalf("old leader %d applied an uncommitted divergent entry (applied %d > %d)",
+			l1, col.appliedIndex(l1), committedBeforePartition)
 	}
 
-	// Heal: every node converges on the same committed log; OLD-4/5 are gone.
+	// Heal: every node converges on the same committed log; the OLD-* entries are gone.
 	c.Heal()
-	waitAppliedAll(t, col, 6, allIDs(5), 6*time.Second)
-	assertConverged(t, col, allIDs(5), 6, expected)
+	waitAppliedAll(t, col, lastB, allIDs(5), 6*time.Second)
+	assertConverged(t, col, allIDs(5), lastB, expected)
 }
 
 // TestNoConflictingCommitsUnderChurn is the headline durability property: across
@@ -310,11 +320,14 @@ func TestNoConflictingCommitsUnderChurn(t *testing.T) {
 				}
 				time.Sleep(40 * time.Millisecond)
 			}
+			// After the chaos stops, the cluster must still make progress: commit a
+			// fresh entry and confirm every node applies it. (Asserting only that
+			// *some* in-loop entry committed is flaky — aggressive crash timing can
+			// legitimately prevent any in-loop commit; proving post-churn liveness is
+			// the property we actually care about, and it is deterministic.)
 			checkOneLeader(t, c, 3*time.Second)
-			time.Sleep(300 * time.Millisecond)
-			if col.maxAgreedIndex() == 0 {
-				t.Fatal("no entries were ever committed under churn")
-			}
+			idx := mustProposeToAnyLeader(t, c, []byte(fmt.Sprintf("final-%d", s)))
+			waitAppliedAll(t, col, idx, allIDs(5), 8*time.Second)
 		})
 	}
 }
