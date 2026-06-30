@@ -2,7 +2,7 @@
 // never calls time.Now or time.After directly.
 //
 // This indirection is the foundation of Deterministic Simulation Testing (see
-// DIFFERENTIATION.md): in production we use RealClock, but in simulation tests
+// docs/ARCHITECTURE.md): in production we use RealClock, but in simulation tests
 // we use MockClock, whose time only advances when the test explicitly calls
 // Advance. That lets a test compress hours of election timeouts and heartbeats
 // into microseconds and, crucially, makes timing reproducible from a seed.

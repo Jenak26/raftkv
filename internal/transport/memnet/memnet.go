@@ -2,7 +2,7 @@
 // connects Raft nodes. It implements transport.Transport so the exact same Raft
 // code that runs over real sockets in production runs over this simulation in
 // tests — the foundation of the project's Deterministic Simulation Testing
-// strategy (see DIFFERENTIATION.md).
+// strategy (see docs/ARCHITECTURE.md).
 //
 // Every source of non-determinism is seed-driven: message drops, added latency,
 // and reordering all come from a single seeded RNG, and all timing flows through

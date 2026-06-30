@@ -2,7 +2,7 @@
 
 A curated gallery of **real bugs** found while building this system — each one a self-contained case file. This is the single most valuable interview asset in the repo: "tell me about a hard bug" is asked in every senior interview, and most candidates fumble it.
 
-Distributed-systems bugs are normally invisible and non-reproducible. Because this project runs inside a [deterministic simulation](../../DIFFERENTIATION.md), every bug here is **reproducible from a single seed** — and once fixed, that seed becomes a permanent regression test.
+Distributed-systems bugs are normally invisible and non-reproducible. Because this project runs inside a [deterministic simulation](../ARCHITECTURE.md), every bug here is **reproducible from a single seed** — and once fixed, that seed becomes a permanent regression test.
 
 ## Template for each entry (`NN-short-name.md`)
 
