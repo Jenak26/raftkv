@@ -1,9 +1,9 @@
 # Benchmarks — the cost of consensus
 
-> Phase 10. Now that the system is *correct* (verified linearizable under chaos,
-> see [`explain/10-failure-testing.md`](../explain/10-failure-testing.md)), we
-> measure it. The goal is not a leaderboard number — it's to quantify the
-> trade-offs the design deliberately exposes, and to know where the cost lives.
+> Now that the system is *correct* (verified linearizable under chaos by the
+> [`test/chaos`](../test/chaos) suite), we measure it. The goal is not a leaderboard
+> number — it's to quantify the trade-offs the design deliberately exposes, and to
+> know where the cost lives.
 
 ## How to run
 

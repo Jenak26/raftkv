@@ -14,7 +14,7 @@
 **A fault-tolerant key-value store built on a from-scratch implementation of the [Raft consensus algorithm](https://raft.github.io/raft.pdf) — and tested the way real distributed databases are: inside a *deterministic simulation* where the network, clock, and disk are driven by a single seed.** No consensus libraries. No `hashicorp/raft`. The algorithm is built from the extended paper, function by function — election, replication, persistence, snapshotting, membership, and linearizable reads — and then put through a Jepsen-style gauntlet that *proves* it stays correct under partitions, crashes, and message loss.
 
 > [!IMPORTANT]
-> **The deliverable isn't "Raft works." It's "Raft is *provably* correct under chaos — and any failure replays from its seed."** A hand-written linearizability checker verifies that everything clients observed, while a nemesis tore the cluster apart, could only have come from a single correct machine. Three real, deep bugs were found, fixed, and written up as case files in the [**bug museum**](explain/bug-museum/).
+> **The deliverable isn't "Raft works." It's "Raft is *provably* correct under chaos — and any failure replays from its seed."** A hand-written linearizability checker verifies that everything clients observed, while a nemesis tore the cluster apart, could only have come from a single correct machine. Three real, deep bugs were found, fixed, and written up as case files in the [**bug museum**](docs/bug-museum/).
 
 ---
 
@@ -121,9 +121,9 @@ Real bugs found while building this, each a case file — *symptom → which Raf
 
 | # | Bug | Lesson |
 |---|---|---|
-| [01](explain/bug-museum/01-single-node-never-elects.md) | A single-node cluster never elected a leader | Evaluate a majority the instant the deciding vote is cast — including your own |
-| [02](explain/bug-museum/02-internal-entries-delivered-to-app.md) | Raft delivered its own internal entries to the app, which panicked | Test the *integration* of features, not just each alone |
-| [03](explain/bug-museum/03-harness-data-race.md) | The test harness raced under concurrent chaos | Caught by `-race` on the first concurrent run — infra is production code too |
+| [01](docs/bug-museum/01-single-node-never-elects.md) | A single-node cluster never elected a leader | Evaluate a majority the instant the deciding vote is cast — including your own |
+| [02](docs/bug-museum/02-internal-entries-delivered-to-app.md) | Raft delivered its own internal entries to the app, which panicked | Test the *integration* of features, not just each alone |
+| [03](docs/bug-museum/03-harness-data-race.md) | The test harness raced under concurrent chaos | Caught by `-race` on the first concurrent run — infra is production code too |
 
 ### Run it yourself
 
@@ -179,13 +179,13 @@ ADR-style — the *why* matters more than the *what*:
 
 ---
 
-## 📚 Learn the Internals
+## 📚 Deep Dives
 
-The [`explain/`](explain/) folder is half the value of this repo — every subsystem in plain words: the problem it solves, the invariants, the message flow, and what breaks if you get it wrong.
+- [**Architecture**](docs/ARCHITECTURE.md) — the layers, the concurrency model (one mutex, never held across an RPC), the write/read paths, and the five Raft safety properties.
+- [**Benchmarks**](docs/BENCHMARKS.md) — the cost of consensus and the read-consistency trade-off, with methodology.
+- [🐛 **The bug museum**](docs/bug-museum/) — real bugs found while building this, each a case file: symptom → which invariant broke → fix → the test that catches it.
 
-[Replicated state machines](explain/01-replicated-state-machines.md) · [Deterministic simulation](explain/02-deterministic-simulation.md) · [Leader election](explain/03-leader-election.md) · [Log replication](explain/04-log-replication.md) · [Persistence](explain/05-persistence-and-recovery.md) · [KV & exactly-once](explain/06-kv-and-client-semantics.md) · [Snapshotting](explain/07-snapshotting.md) · [Membership](explain/08-membership-changes.md) · [Linearizable reads](explain/09-linearizable-reads.md) · [Failure testing](explain/10-failure-testing.md)
-
-See [`plan.md`](plan.md) for the full build plan and [`DIFFERENTIATION.md`](DIFFERENTIATION.md) for the strategy behind it.
+The consensus core in [`internal/raft`](internal/raft) is commented function-by-function against the Raft paper. See [`plan.md`](plan.md) for the full build plan.
 
 ---
 
@@ -205,8 +205,7 @@ test/
   chaos/        seeded nemesis + Jepsen-style verification
   linearizability/  from-scratch WGL linearizability checker
 bench/          benchmark harness
-explain/        learning notes + the bug museum
-docs/           architecture · benchmarks · design decisions
+docs/           architecture · benchmarks · the bug museum
 ```
 
 ---

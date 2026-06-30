@@ -38,3 +38,6 @@ go.work.sum
 *.swp
 .DS_Store
 Thumbs.db
+
+# Personal study notes — kept local, not published
+/explain/
