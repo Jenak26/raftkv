@@ -8,6 +8,7 @@
 [![Verified](https://img.shields.io/badge/Verified-Linearizable%20under%20chaos-brightgreen?style=for-the-badge)](#-how-its-tested--the-whole-point)
 [![CI](https://img.shields.io/github/actions/workflow/status/Jenak26/raftkv/ci.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white)](https://github.com/Jenak26/raftkv/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/▶_Live_Demo-raftkv.onrender.com-22c55e?style=for-the-badge)](https://raftkv.onrender.com)
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Jenak26/raftkv)
 
@@ -24,9 +25,13 @@
 
 ## 🎬 Live demo
 
-An interactive visualizer ([`cmd/raftviz`](cmd/raftviz)) runs a 5-node cluster in one process and serves a web UI: propose entries and watch them replicate, then **crash or isolate the leader and watch a new one get elected in real time.**
+An interactive visualizer ([`cmd/raftviz`](cmd/raftviz)) runs a 5-node cluster in one process and serves a web UI: propose entries and watch them replicate, then **crash or isolate the leader and watch a new one get elected in real time.** A live activity feed narrates every election, crash, and commit.
 
-**▶️ Live:** _add your deployed URL here_ &nbsp;·&nbsp; or run it locally in one command:
+### ▶️ **[raftkv.onrender.com](https://raftkv.onrender.com)**
+
+> Hosted free on Render, so it sleeps when idle - the first load may take ~30-60s to wake, then it's instant.
+
+Or run it locally in one command:
 
 ```bash
 go run ./cmd/raftviz      # then open http://localhost:7860

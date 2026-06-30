@@ -6,132 +6,208 @@
 <title>raftkv - live Raft visualizer</title>
 <style>
   :root {
-    --bg: #0b0f17; --panel: #131a26; --panel2: #0f1521; --line: #233044;
-    --txt: #e6edf6; --dim: #8aa0bd; --accent: #38bdf8;
-    --leader: #22c55e; --candidate: #f59e0b; --follower: #64748b;
-    --down: #ef4444; --isolated: #a855f7;
+    --bg:#0a0e16; --panel:#121925; --panel2:#0e1420; --line:#223044;
+    --txt:#e6edf6; --dim:#8aa0bd; --dim2:#5f738f; --accent:#38bdf8;
+    --leader:#22c55e; --candidate:#f59e0b; --follower:#64748b; --down:#ef4444; --isolated:#a855f7;
   }
-  * { box-sizing: border-box; }
+  * { box-sizing:border-box; }
   body {
-    margin: 0; background: radial-gradient(1200px 600px at 50% -10%, #16203180, var(--bg));
-    color: var(--txt); font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    min-height: 100vh;
+    margin:0; background:radial-gradient(1100px 560px at 50% -8%, #18233880, var(--bg)); color:var(--txt);
+    font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; min-height:100vh;
   }
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 20px 64px; }
-  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.02em; }
-  h1 .tag { color: var(--accent); }
-  .sub { color: var(--dim); margin: 0 0 24px; }
-  .sub code { background: #1c2738; padding: 1px 6px; border-radius: 5px; color: #cfe3ff; }
-  .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; align-items: center; }
-  button {
-    background: var(--panel); color: var(--txt); border: 1px solid var(--line);
-    padding: 8px 14px; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 600;
-    transition: transform .06s ease, background .15s ease, border-color .15s ease;
-  }
-  button:hover { background: #1b2738; border-color: #31425c; }
-  button:active { transform: translateY(1px); }
-  button.primary { background: var(--accent); color: #04121d; border-color: var(--accent); }
-  button.ghost { background: transparent; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
-  .node {
-    background: linear-gradient(180deg, var(--panel), var(--panel2));
-    border: 1px solid var(--line); border-radius: 14px; padding: 16px;
-    position: relative; overflow: hidden; transition: border-color .2s ease, box-shadow .2s ease;
-  }
-  .node::before {
-    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--follower);
-    transition: background .2s ease;
-  }
-  .node.leader { border-color: #1f6f43; box-shadow: 0 0 0 1px #1f6f4366, 0 8px 30px -12px #22c55e55; }
-  .node.leader::before { background: var(--leader); }
-  .node.candidate::before { background: var(--candidate); }
-  .node.down { opacity: .62; }
-  .node.down::before { background: var(--down); }
-  .node.isolated::before { background: var(--isolated); }
-  .node h3 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: center; justify-content: space-between; }
-  .role {
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-    padding: 3px 8px; border-radius: 999px; background: #1c2738; color: var(--dim);
-  }
-  .role.Leader { background: #0c2c1a; color: var(--leader); }
-  .role.Candidate { background: #2c2310; color: var(--candidate); }
-  .role.Down { background: #2c1414; color: var(--down); }
-  .role.Isolated { background: #241431; color: var(--isolated); }
-  .stat { display: flex; justify-content: space-between; color: var(--dim); font-size: 13px; margin: 3px 0; }
-  .stat b { color: var(--txt); font-variant-numeric: tabular-nums; }
-  .nbtns { display: flex; gap: 8px; margin-top: 12px; }
-  .nbtns button { flex: 1; padding: 6px 0; font-size: 12.5px; }
-  .legend { display: flex; gap: 16px; flex-wrap: wrap; color: var(--dim); font-size: 13px; margin-top: 22px; }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-  .foot { margin-top: 28px; color: var(--dim); font-size: 13px; }
-  .foot a { color: var(--accent); text-decoration: none; }
-  #flash { min-height: 18px; color: var(--candidate); font-size: 13px; margin-left: 6px; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .wrap { max-width:1080px; margin:0 auto; padding:30px 20px 70px; }
+
+  header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  h1 { font-size:27px; margin:0 0 4px; letter-spacing:-0.02em; }
+  h1 .tag { color:var(--accent); }
+  .sub { color:var(--dim); margin:0; max-width:640px; }
+  .ghbtn { border:1px solid var(--line); background:var(--panel); color:var(--txt); padding:8px 13px;
+    border-radius:9px; font-weight:600; font-size:13.5px; white-space:nowrap; }
+  .ghbtn:hover { border-color:#31425c; text-decoration:none; }
+
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:22px 0; }
+  @media (max-width:760px){ .cards { grid-template-columns:1fr; } }
+  .card { background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid var(--line);
+    border-radius:14px; padding:16px 18px; }
+  .card h2 { font-size:14px; margin:0 0 10px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); }
+  .card p { margin:0 0 8px; color:var(--dim); }
+  .card p b, .card li b { color:var(--txt); }
+  ol.try { margin:0; padding-left:18px; color:var(--dim); }
+  ol.try li { margin:6px 0; }
+  .pill { display:inline-block; font-size:12px; font-weight:700; padding:1px 7px; border-radius:6px; background:#1c2738; color:#cfe3ff; }
+  .keys { display:flex; flex-direction:column; gap:7px; }
+  .keys div { display:flex; gap:9px; align-items:baseline; color:var(--dim); }
+  .keys b { color:var(--txt); min-width:58px; display:inline-block; }
+
+  .controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:6px 0 18px; }
+  button { background:var(--panel); color:var(--txt); border:1px solid var(--line); padding:9px 15px;
+    border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; transition:transform .06s, background .15s, border-color .15s; }
+  button:hover { background:#1b2738; border-color:#31425c; }
+  button:active { transform:translateY(1px); }
+  button.primary { background:var(--accent); color:#04121d; border-color:var(--accent); }
+  .live { margin-left:auto; display:inline-flex; align-items:center; gap:7px; color:var(--dim); font-size:13px; }
+  .live .dot { width:8px; height:8px; border-radius:50%; background:var(--leader); animation:pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:14px; }
+  .node { background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid var(--line);
+    border-radius:14px; padding:15px; position:relative; overflow:hidden;
+    transition:border-color .25s, box-shadow .25s, opacity .25s; }
+  .node::before { content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--follower); transition:background .25s; }
+  .node.leader { border-color:#1f6f43; box-shadow:0 0 0 1px #1f6f4355, 0 10px 32px -14px #22c55e66; }
+  .node.leader::before { background:var(--leader); }
+  .node.candidate::before { background:var(--candidate); }
+  .node.isolated::before { background:var(--isolated); }
+  .node.down { opacity:.55; }
+  .node.down::before { background:var(--down); }
+  .node h3 { margin:0 0 10px; font-size:15px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .role { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:999px; background:#1c2738; color:var(--dim); }
+  .role.Leader { background:#0c2c1a; color:var(--leader); }
+  .role.Candidate { background:#2c2310; color:var(--candidate); }
+  .role.Down { background:#2c1414; color:var(--down); }
+  .role.Isolated { background:#241431; color:var(--isolated); }
+  .stat { display:flex; justify-content:space-between; color:var(--dim); font-size:13px; margin:3px 0; }
+  .stat b { color:var(--txt); font-variant-numeric:tabular-nums; }
+  .nbtns { display:flex; gap:8px; margin-top:12px; }
+  .nbtns button { flex:1; padding:6px 0; font-size:12.5px; }
+
+  .legend { display:flex; gap:15px; flex-wrap:wrap; color:var(--dim); font-size:13px; margin:18px 0 0; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .ldot { width:10px; height:10px; border-radius:50%; }
+
+  .logwrap { margin-top:26px; }
+  .logwrap h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); margin:0 0 8px; }
+  #log { background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px 14px;
+    font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--dim); min-height:46px; max-height:190px; overflow:auto; }
+  #log .ev { white-space:nowrap; }
+  #log .t { color:var(--dim2); }
+  #log .up { color:var(--leader); } #log .warn { color:var(--candidate); } #log .bad { color:var(--down); } #log .iso { color:var(--isolated); }
+
+  .foot { margin-top:28px; color:var(--dim2); font-size:13px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>🗳️ <span class="tag">raftkv</span> - live Raft visualizer</h1>
-  <p class="sub">A 5-node cluster running the from-scratch <a href="https://raft.github.io/raft.pdf" style="color:var(--accent)">Raft</a> implementation in one process.
-  <b>Propose</b> entries and watch them replicate; <b>crash</b> or <b>isolate</b> the <span style="color:var(--leader)">leader</span> and watch a new one get elected in real time.</p>
+  <header>
+    <div>
+      <h1>🗳️ <span class="tag">raftkv</span> - live Raft visualizer</h1>
+      <p class="sub">Five servers running a <b>from-scratch implementation of the Raft consensus algorithm</b>, agreeing on one replicated log - live, in your browser.</p>
+    </div>
+    <a class="ghbtn" href="https://github.com/Jenak26/raftkv" target="_blank" rel="noopener">★ View source on GitHub</a>
+  </header>
+
+  <div class="cards">
+    <div class="card">
+      <h2>What am I looking at?</h2>
+      <p>Each box is a <b>server</b> in a 5-node cluster. The cluster elects exactly one <b style="color:var(--leader)">Leader</b>; the rest are <b>Followers</b>. Every write goes through the leader, which <b>replicates</b> it to the others. The magic of Raft: the cluster keeps one consistent log <b>even when servers crash or get cut off</b> - as long as a majority (here, 3 of 5) can still talk.</p>
+      <p style="margin-bottom:0">This is the real consensus code from the repo, not a fake animation. Faults are injected through the same simulated network the test suite uses.</p>
+    </div>
+    <div class="card">
+      <h2>Try this</h2>
+      <ol class="try">
+        <li>Hit <span class="pill">Propose entry</span> a few times - watch <b>commit</b> and <b>log</b> climb in lock-step on every node (replication).</li>
+        <li><b>Crash</b> the green <b style="color:var(--leader)">Leader</b>. Within a moment a new leader is elected at a <b>higher term</b> (failover).</li>
+        <li><b>Isolate</b> a node, propose more, then <b>Rejoin</b> it - it catches up to the others.</li>
+        <li><b>Restart</b> a crashed node or hit <span class="pill">Heal all</span> to reset.</li>
+      </ol>
+    </div>
+  </div>
 
   <div class="controls">
-    <button class="primary" onclick="api('/api/propose'); flash('proposed an entry to the leader')">➕ Propose entry</button>
-    <button class="ghost" onclick="api('/api/heal'); flash('healed all partitions')">🌐 Heal all</button>
-    <span id="flash"></span>
+    <button class="primary" onclick="api('/api/propose')">➕ Propose entry</button>
+    <button onclick="api('/api/heal')">🌐 Heal all</button>
+    <span class="live"><span class="dot"></span> live</span>
   </div>
 
   <div class="grid" id="grid"></div>
 
   <div class="legend">
-    <span><i class="dot" style="background:var(--leader)"></i> Leader</span>
-    <span><i class="dot" style="background:var(--candidate)"></i> Candidate</span>
-    <span><i class="dot" style="background:var(--follower)"></i> Follower</span>
-    <span><i class="dot" style="background:var(--isolated)"></i> Isolated</span>
-    <span><i class="dot" style="background:var(--down)"></i> Down</span>
+    <span><i class="ldot" style="background:var(--leader)"></i> Leader</span>
+    <span><i class="ldot" style="background:var(--candidate)"></i> Candidate (mid-election)</span>
+    <span><i class="ldot" style="background:var(--follower)"></i> Follower</span>
+    <span><i class="ldot" style="background:var(--isolated)"></i> Isolated</span>
+    <span><i class="ldot" style="background:var(--down)"></i> Crashed</span>
   </div>
 
-  <p class="foot">term = election epoch · commit = highest committed log index · log = entries held.
-  Source &amp; design notes: <a href="https://github.com/Jenak26/raftkv">github.com/Jenak26/raftkv</a></p>
+  <div class="cards" style="margin-top:18px">
+    <div class="card">
+      <h2>What the numbers mean</h2>
+      <div class="keys">
+        <div><b>term</b><span>Raft's logical clock. Every election bumps it; a higher term always wins.</span></div>
+        <div><b>commit</b><span>highest log index agreed by a majority - i.e. durably stored.</span></div>
+        <div><b>log</b><span>entries this node currently holds (committed + pending).</span></div>
+      </div>
+    </div>
+    <div class="logwrap card">
+      <h2>Activity</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <p class="foot">A live demo of <a href="https://github.com/Jenak26/raftkv">github.com/Jenak26/raftkv</a> - a linearizable key-value store on a from-scratch Raft core, verified under fault injection.</p>
 </div>
 
 <script>
+let prev = null;
+
 async function api(path) {
-  try { await fetch(path, { method: 'POST' }); } catch (e) {}
+  try { await fetch(path, { method:'POST' }); } catch(e) {}
   refresh();
 }
-function flash(msg) {
-  const f = document.getElementById('flash');
-  f.textContent = msg;
-  clearTimeout(flash._t);
-  flash._t = setTimeout(() => { f.textContent = ''; }, 1800);
+function baseRole(role){ return role.startsWith('Isolated:') ? 'Isolated' : role; }
+
+function logEvent(html, cls) {
+  const el = document.getElementById('log');
+  const t = new Date().toLocaleTimeString();
+  const line = document.createElement('div');
+  line.className = 'ev';
+  line.innerHTML = `<span class="t">${t}</span>  <span class="${cls||''}">${html}</span>`;
+  el.prepend(line);
+  while (el.children.length > 9) el.removeChild(el.lastChild);
 }
 
-function baseRole(role) { return role.startsWith('Isolated:') ? 'Isolated' : role; }
+function diff(prevNodes, nodes) {
+  if (!prevNodes) return;
+  const byId = id => prevNodes.find(n => n.id === id);
+  const prevLeader = prevNodes.find(n => n.leader);
+  const newLeader = nodes.find(n => n.leader);
+  if (newLeader && (!prevLeader || prevLeader.id !== newLeader.id)) {
+    logEvent(`👑 <b>Node ${newLeader.id}</b> elected leader (term ${newLeader.term})`, 'up');
+  }
+  for (const n of nodes) {
+    const p = byId(n.id); if (!p) continue;
+    if (p.up && !n.up) logEvent(`💥 Node ${n.id} crashed`, 'bad');
+    if (!p.up && n.up) logEvent(`🔄 Node ${n.id} restarted`, 'warn');
+    if (p.up && n.up && p.connected && !n.connected) logEvent(`✂️ Node ${n.id} isolated from the cluster`, 'iso');
+    if (p.up && n.up && !p.connected && n.connected) logEvent(`🔗 Node ${n.id} rejoined`, 'up');
+  }
+  const pc = Math.max(...prevNodes.map(n => n.up ? n.commit : 0));
+  const nc = Math.max(...nodes.map(n => n.up ? n.commit : 0));
+  if (nc > pc) logEvent(`✅ entry committed at index ${nc} (replicated to a majority)`, 'up');
+}
 
 function render(nodes) {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
   for (const n of nodes) {
     const role = baseRole(n.role);
-    const cls = !n.up ? 'down' : !n.connected ? 'isolated'
-      : n.leader ? 'leader' : role === 'Candidate' ? 'candidate' : '';
+    const cls = !n.up ? 'down' : !n.connected ? 'isolated' : n.leader ? 'leader' : role === 'Candidate' ? 'candidate' : '';
     const label = !n.up ? 'Down' : !n.connected ? 'Isolated' : role;
-
+    const crown = n.up && n.connected && n.leader ? ' 👑' : '';
     const card = document.createElement('div');
     card.className = 'node ' + cls;
     card.innerHTML = `
-      <h3>Node ${n.id} <span class="role ${label.replace(':','')}">${label}</span></h3>
+      <h3><span>Node ${n.id}${crown}</span> <span class="role ${label.replace(':','')}">${label}</span></h3>
       <div class="stat"><span>term</span><b>${n.up ? n.term : '-'}</b></div>
       <div class="stat"><span>commit</span><b>${n.up ? n.commit : '-'}</b></div>
       <div class="stat"><span>log</span><b>${n.up ? n.log : '-'}</b></div>
       <div class="nbtns">
-        ${n.up
-          ? `<button onclick="api('/api/node?id=${n.id}&action=crash')">Crash</button>`
-          : `<button onclick="api('/api/node?id=${n.id}&action=restart')">Restart</button>`}
-        ${n.up && n.connected
-          ? `<button onclick="api('/api/node?id=${n.id}&action=isolate')">Isolate</button>`
-          : n.up ? `<button onclick="api('/api/node?id=${n.id}&action=rejoin')">Rejoin</button>` : ''}
+        ${n.up ? `<button onclick="api('/api/node?id=${n.id}&action=crash')">Crash</button>`
+               : `<button onclick="api('/api/node?id=${n.id}&action=restart')">Restart</button>`}
+        ${n.up && n.connected ? `<button onclick="api('/api/node?id=${n.id}&action=isolate')">Isolate</button>`
+               : n.up ? `<button onclick="api('/api/node?id=${n.id}&action=rejoin')">Rejoin</button>` : ''}
       </div>`;
     grid.appendChild(card);
   }
@@ -141,9 +217,12 @@ async function refresh() {
   try {
     const r = await fetch('/api/state');
     const data = await r.json();
+    diff(prev, data.nodes);
     render(data.nodes);
-  } catch (e) {}
+    prev = data.nodes;
+  } catch(e) {}
 }
+logEvent('connected - waiting for the cluster to elect a leader...', 'warn');
 refresh();
 setInterval(refresh, 400);
 </script>
