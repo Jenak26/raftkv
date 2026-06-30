@@ -8,7 +8,7 @@ A linearizable, fault-tolerant key-value store built on a **from-scratch impleme
 
 ## Status
 
-🚧 **Under active construction — Phase 4 (Persistence & crash recovery) complete.**
+✅ **Core complete — all 11 phases (0–10) done.** Verified linearizable under seeded fault injection; benchmarked.
 
 | Phase | Capability | State |
 |------:|---|:---:|
@@ -17,14 +17,18 @@ A linearizable, fault-tolerant key-value store built on a **from-scratch impleme
 | 2 | Leader election | ✅ |
 | 3 | Log replication | ✅ |
 | 4 | Persistence & crash recovery | ✅ |
-| 5 | KV layer + exactly-once client semantics | ⏳ |
-| 6 | Snapshotting / log compaction | ⏳ |
-| 7 | Cluster membership changes | ⏳ |
-| 8 | Linearizable reads (ReadIndex) | ⏳ |
-| 9 | Jepsen-style fault testing + linearizability verification | ⏳ |
-| 10 | Benchmarking vs. etcd + observability | ⏳ |
+| 5 | KV layer + exactly-once client semantics | ✅ |
+| 6 | Snapshotting / log compaction | ✅ |
+| 7 | Cluster membership changes | ✅ |
+| 8 | Linearizable reads (ReadIndex) | ✅ |
+| 9 | Jepsen-style fault testing + linearizability verification | ✅ |
+| 10 | Benchmarking + observability | ✅ |
 
-The headline correctness number and demo GIF land at Phase 9. See [`plan.md`](plan.md) for milestones M0–M8.
+Reached **M7** (the resume-ready milestone): thousands of seeded chaos operations
+verified linearizable by a from-scratch WGL checker, with real bugs found and
+written up in [`explain/bug-museum/`](explain/bug-museum/). See [`plan.md`](plan.md)
+for the full milestone map, [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) for the cost
+of consensus, and [`explain/`](explain/) for the concept-by-concept walkthrough.
 
 ---
 
